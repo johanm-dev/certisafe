@@ -1,0 +1,176 @@
+<div class="cs-page">
+  <div class="cs-cabecera">
+    <div>
+      <h1>Usuarios</h1>
+      <p class="cs-subtitulo">
+        Cuentas del sistema con su rol. Desactivar una cuenta es el borrado lógico: no
+        desaparece del historial, solo deja de poder iniciar sesión.
+      </p>
+    </div>
+    <span class="cs-spacer"></span>
+    @if (puedeExportar()) {
+      <cs-export-button [disabled]="vacio()" (exportar)="exportar($event)" />
+    }
+    @if (puedeCrear()) {
+      <button mat-flat-button type="button" (click)="nuevoUsuario()">
+        <mat-icon>person_add</mat-icon>
+        Nuevo usuario
+      </button>
+    }
+  </div>
+
+  <mat-card appearance="outlined" class="cs-filtros">
+    <div class="cs-row">
+      <mat-form-field appearance="outline" class="cs-buscador">
+        <mat-label>Buscar</mat-label>
+        <input matInput [formControl]="searchControl" placeholder="Nombre, apellido o correo" />
+        <mat-icon matPrefix>search</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="cs-field-sm">
+        <mat-label>Rol</mat-label>
+        <mat-select [formControl]="roleControl">
+          <mat-option value="">Todos</mat-option>
+          @for (rol of roles(); track rol.id) {
+            <mat-option [value]="rol.id">{{ rol.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="cs-field-sm">
+        <mat-label>Estado</mat-label>
+        <mat-select [formControl]="estadoControl">
+          <mat-option value="todos">Todos</mat-option>
+          <mat-option value="activos">Activos</mat-option>
+          <mat-option value="inactivos">Inactivos</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <button
+        mat-stroked-button
+        type="button"
+        (click)="limpiarFiltros()"
+        matTooltip="Quitar todos los filtros"
+      >
+        <mat-icon>filter_alt_off</mat-icon>
+        Limpiar
+      </button>
+    </div>
+  </mat-card>
+
+  <mat-card appearance="outlined" class="cs-tabla-card">
+    @if (loading()) {
+      <mat-progress-bar mode="indeterminate" />
+    }
+
+    <div class="cs-tabla-scroll">
+      <table
+        mat-table
+        [dataSource]="rows()"
+        matSort
+        [matSortActive]="sortField()"
+        [matSortDirection]="sortDirection()"
+        (matSortChange)="onSortChange($event)"
+      >
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Usuario</th>
+          <td mat-cell *matCellDef="let usuario">
+            <div class="cs-nombre">{{ usuario.fullName }}</div>
+            <div class="cs-descripcion">{{ usuario.email }}</div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="role">
+          <th mat-header-cell *matHeaderCellDef>Rol</th>
+          <td mat-cell *matCellDef="let usuario">{{ usuario.role.name }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="phone">
+          <th mat-header-cell *matHeaderCellDef>Teléfono</th>
+          <td mat-cell *matCellDef="let usuario">
+            @if (usuario.phone) {
+              {{ usuario.phone }}
+            } @else {
+              <span class="cs-sin-dato">Sin registrar</span>
+            }
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="active">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Estado</th>
+          <td mat-cell *matCellDef="let usuario">
+            <span
+              class="cs-chip"
+              [class]="'cs-chip ' + (usuario.active ? 'cs-chip--ok' : 'cs-chip--muted')"
+            >
+              {{ usuario.active ? 'Activo' : 'Inactivo' }}
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="lastAccess">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Último acceso</th>
+          <td mat-cell *matCellDef="let usuario">
+            @if (usuario.lastAccess) {
+              {{ usuario.lastAccess | date: 'short' }}
+            } @else {
+              <span class="cs-sin-dato">Nunca</span>
+            }
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef class="cs-acciones-col"></th>
+          <td mat-cell *matCellDef="let usuario" class="cs-acciones-col">
+            <button
+              matIconButton
+              type="button"
+              [matMenuTriggerFor]="acciones"
+              [attr.aria-label]="'Acciones para ' + usuario.fullName"
+            >
+              <mat-icon>more_vert</mat-icon>
+            </button>
+
+            <mat-menu #acciones="matMenu">
+              @if (puedeEditar()) {
+                <button mat-menu-item type="button" (click)="editarUsuario(usuario)">
+                  <mat-icon>edit</mat-icon>
+                  <span>Editar</span>
+                </button>
+              }
+
+              @if (puedeActivarDesactivar() && !esUsuarioActual(usuario)) {
+                <button mat-menu-item type="button" (click)="cambiarEstado(usuario)">
+                  <mat-icon>{{ usuario.active ? 'person_off' : 'how_to_reg' }}</mat-icon>
+                  <span>{{ usuario.active ? 'Desactivar' : 'Activar' }}</span>
+                </button>
+              }
+            </mat-menu>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columnas"></tr>
+        <tr mat-row *matRowDef="let fila; columns: columnas"></tr>
+
+        <tr *matNoDataRow>
+          <td class="cs-vacio" [attr.colspan]="columnas.length">
+            @if (loading()) {
+              Cargando usuarios…
+            } @else {
+              No hay usuarios que coincidan con los filtros.
+            }
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <mat-paginator
+      [length]="total()"
+      [pageSize]="pageSize()"
+      [pageIndex]="pageIndex()"
+      [pageSizeOptions]="[5, 10, 20, 50]"
+      (page)="onPageChange($event)"
+      showFirstLastButtons
+    />
+  </mat-card>
+</div>

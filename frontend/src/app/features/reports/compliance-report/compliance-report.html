@@ -1,0 +1,187 @@
+<div class="cs-page">
+  <div class="cs-cabecera">
+    <div>
+      <h1>Reporte de cumplimiento</h1>
+      <p class="cs-subtitulo">
+        Estado de cada operario por taller: con certificación vigente, con certificación
+        vencida o sin certificar. Quienes no tienen certificación vigente aparecen
+        resaltados como no aptos para ingresar a zonas de alto riesgo.
+      </p>
+    </div>
+    <span class="cs-spacer"></span>
+    <button mat-stroked-button type="button" (click)="recargar()" matTooltip="Volver a consultar">
+      <mat-icon>refresh</mat-icon>
+      Actualizar
+    </button>
+    <cs-export-button [disabled]="vacio()" (exportar)="exportar($event)" />
+  </div>
+
+  <mat-card appearance="outlined" class="cs-filtros">
+    <div class="cs-row">
+      <mat-form-field appearance="outline" class="cs-buscador">
+        <mat-label>Buscar</mat-label>
+        <input matInput [formControl]="searchControl" placeholder="Nombre o correo" />
+        <mat-icon matPrefix>search</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="cs-field-md">
+        <mat-label>Taller</mat-label>
+        <mat-select [formControl]="workshopControl">
+          <mat-option value="">Todos</mat-option>
+          @for (taller of talleres(); track taller.id) {
+            <mat-option [value]="taller.id">{{ taller.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="cs-field-sm">
+        <mat-label>Taller desde</mat-label>
+        <input matInput [matDatepicker]="pickerDesde" [formControl]="fromControl" />
+        <mat-datepicker-toggle matIconSuffix [for]="pickerDesde" />
+        <mat-datepicker #pickerDesde />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="cs-field-sm">
+        <mat-label>Taller hasta</mat-label>
+        <input matInput [matDatepicker]="pickerHasta" [formControl]="toControl" />
+        <mat-datepicker-toggle matIconSuffix [for]="pickerHasta" />
+        <mat-datepicker #pickerHasta />
+      </mat-form-field>
+
+      <button
+        mat-stroked-button
+        type="button"
+        (click)="limpiarFiltros()"
+        matTooltip="Quitar todos los filtros"
+      >
+        <mat-icon>filter_alt_off</mat-icon>
+        Limpiar
+      </button>
+    </div>
+  </mat-card>
+
+  <mat-card appearance="outlined" class="cs-tabla-card">
+    @if (loading()) {
+      <mat-progress-bar mode="indeterminate" />
+    }
+
+    <div class="cs-tabla-scroll">
+      <table
+        mat-table
+        [dataSource]="rows()"
+        matSort
+        [matSortActive]="sortField() === 'lastName' ? 'operario' : sortField()"
+        [matSortDirection]="sortDirection()"
+        (matSortChange)="onSortChange($event)"
+      >
+        <ng-container matColumnDef="operario">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Operario</th>
+          <td mat-cell *matCellDef="let fila">
+            <div class="cs-nombre">{{ fila.userFullName }}</div>
+            <div class="cs-descripcion">{{ fila.userEmail }}</div>
+            @if (!fila.userActive) {
+              <span class="cs-chip cs-chip--muted">Inactivo</span>
+            }
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Estado</th>
+          <td mat-cell *matCellDef="let fila">
+            <span class="cs-chip" [class]="'cs-chip cs-chip--' + tonoDe(fila)">
+              {{ etiquetaDe(fila) }}
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="apt">
+          <th mat-header-cell *matHeaderCellDef>Apto</th>
+          <td mat-cell *matCellDef="let fila">
+            <span
+              class="cs-chip"
+              [class]="fila.aptForHighRisk ? 'cs-chip cs-chip--ok' : 'cs-chip cs-chip--error'"
+              [matTooltip]="motivoNoApto(fila)"
+            >
+              {{ fila.aptForHighRisk ? 'Apto' : 'No apto' }}
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="enrollments">
+          <th mat-header-cell *matHeaderCellDef class="cs-num">Talleres</th>
+          <td mat-cell *matCellDef="let fila" class="cs-num">
+            <div>{{ fila.enrollments }}</div>
+            @if (fila.enrollments > 0) {
+              <div class="cs-descripcion">
+                {{ fila.validCertificates }} vigente(s), {{ fila.nonValidCertificates }} no
+                vigente(s)
+              </div>
+            }
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="certificateNumber">
+          <th mat-header-cell *matHeaderCellDef>Certificado</th>
+          <td mat-cell *matCellDef="let fila">
+            @if (fila.certificateNumber) {
+              <span class="cs-cert-num">{{ fila.certificateNumber }}</span>
+              <div class="cs-descripcion">Emitido: {{ fila.issuedAt | date: 'short' }}</div>
+            } @else {
+              <span class="cs-sin-dato">Sin certificación</span>
+            }
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="expiresAt">
+          <th mat-header-cell *matHeaderCellDef>Vence</th>
+          <td mat-cell *matCellDef="let fila">
+            @if (fila.expiresAt) {
+              {{ fila.expiresAt | date: 'short' }}
+            } @else {
+              <span class="cs-sin-dato">—</span>
+            }
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="workshop">
+          <th mat-header-cell *matHeaderCellDef>Taller</th>
+          <td mat-cell *matCellDef="let fila">
+            @if (fila.workshopName) {
+              <div class="cs-nombre">{{ fila.workshopName }}</div>
+              <div class="cs-descripcion">{{ fila.workshopDate | date: 'mediumDate' }}</div>
+            } @else {
+              <span class="cs-sin-dato">—</span>
+            }
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columnas"></tr>
+        <tr
+          mat-row
+          *matRowDef="let fila; columns: columnas"
+          [class.cs-no-apto]="!fila.aptForHighRisk"
+        ></tr>
+
+        <tr *matNoDataRow>
+          <td class="cs-vacio" [attr.colspan]="columnas.length">
+            @if (loading()) {
+              Cargando el reporte…
+            } @else {
+              Ningún registro cumple los filtros. Ajuste el taller o el rango de fechas: el
+              rango se aplica a la fecha en que se dictó el taller.
+            }
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <mat-paginator
+      [length]="total()"
+      [pageSize]="pageSize()"
+      [pageIndex]="pageIndex()"
+      [pageSizeOptions]="[5, 10, 20, 50]"
+      (page)="onPageChange($event)"
+      showFirstLastButtons
+    />
+  </mat-card>
+</div>

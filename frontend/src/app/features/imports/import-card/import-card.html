@@ -1,0 +1,101 @@
+<mat-card appearance="outlined" class="cs-import-card">
+  <div class="cs-import-head">
+    <div>
+      <h2>{{ titulo() }}</h2>
+      <p class="cs-descripcion">{{ descripcion() }}</p>
+    </div>
+
+    <div class="cs-plantillas">
+      <button mat-stroked-button type="button" (click)="descargarPlantilla('csv')">
+        <mat-icon>description</mat-icon>
+        Plantilla CSV
+      </button>
+      <button mat-stroked-button type="button" (click)="descargarPlantilla('xlsx')">
+        <mat-icon>table_view</mat-icon>
+        Plantilla Excel
+      </button>
+    </div>
+  </div>
+
+  <p class="cs-ayuda">
+    Descarga la plantilla y conserva la fila de encabezados. Se aceptan archivos .xlsx o .csv
+    (hasta 5000 filas). Las filas con datos inválidos no bloquean al resto: se guardan las
+    correctas y se reporta cada rechazo.
+  </p>
+
+  <div class="cs-import-acciones">
+    <input
+      #selector
+      class="cs-file-input"
+      type="file"
+      tabindex="-1"
+      aria-label="Archivo para carga masiva"
+      accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      (change)="onArchivo($event)"
+    />
+
+    <button mat-stroked-button type="button" (click)="selector.click()" [disabled]="procesando()">
+      <mat-icon>attach_file</mat-icon>
+      {{ archivo()?.name ?? 'Seleccionar archivo' }}
+    </button>
+
+    <button
+      mat-flat-button
+      type="button"
+      (click)="procesar()"
+      [disabled]="!archivo() || procesando()"
+    >
+      <mat-icon>cloud_upload</mat-icon>
+      Procesar
+    </button>
+
+    @if (archivo() || resultado()) {
+      <button mat-button type="button" (click)="limpiar()" [disabled]="procesando()">
+        Limpiar
+      </button>
+    }
+  </div>
+
+  @if (procesando()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  @if (resultado(); as r) {
+    <div class="cs-resumen">
+      <span [class]="'cs-chip ' + tonoEstado()">{{ etiquetaEstado() }}</span>
+      <span>Total leído: <strong>{{ r.totalRows }}</strong></span>
+      <span>Creados: <strong>{{ r.createdRows }}</strong></span>
+      <span>Rechazados: <strong>{{ r.rejectedRows }}</strong></span>
+      <span class="cs-sin-dato">Lote #{{ r.batchId }} · {{ r.fileName }}</span>
+    </div>
+
+    @if (r.errors.length > 0) {
+      <div class="cs-tabla-scroll cs-errores">
+        <table mat-table [dataSource]="r.errors">
+          <ng-container matColumnDef="rowNumber">
+            <th mat-header-cell *matHeaderCellDef>Fila</th>
+            <td mat-cell *matCellDef="let error">{{ error.rowNumber }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="reason">
+            <th mat-header-cell *matHeaderCellDef>Motivo</th>
+            <td mat-cell *matCellDef="let error">{{ error.reason }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="data">
+            <th mat-header-cell *matHeaderCellDef>Datos de la fila</th>
+            <td mat-cell *matCellDef="let error" class="cs-datos">{{ resumenDatos(error) }}</td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="columnasError"></tr>
+          <tr mat-row *matRowDef="let fila; columns: columnasError"></tr>
+        </table>
+      </div>
+    } @else {
+      <p class="cs-ok">
+        <mat-icon>check_circle</mat-icon>
+        Todas las filas se guardaron correctamente.
+      </p>
+    }
+  }
+</mat-card>

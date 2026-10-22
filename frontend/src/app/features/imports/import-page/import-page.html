@@ -1,0 +1,33 @@
+<div class="cs-page">
+  <div class="cs-cabecera">
+    <div>
+      <h1>Importación y exportación</h1>
+      <p class="cs-subtitulo">
+        Carga masiva de operarios y talleres desde Excel o CSV. Cada archivo se procesa por
+        lotes: las filas válidas se guardan y las rechazadas se reportan con su número de fila
+        y el motivo, sin dejar datos a medias.
+      </p>
+    </div>
+  </div>
+
+  <cs-import-card
+    entity="users"
+    titulo="Operarios"
+    descripcion="Alta masiva de cuentas. El rol es opcional: si no se indica, se crea como OPERATOR."
+  />
+
+  <cs-import-card
+    entity="workshops"
+    titulo="Talleres"
+    descripcion="Los talleres creados quedan en estado Programado y admiten inscripciones."
+  />
+
+  <mat-card appearance="outlined" class="cs-nota">
+    <mat-icon>info</mat-icon>
+    <div>
+      <strong>Cómo exportar.</strong>
+      Los listados de usuarios, talleres e inscripciones tienen su botón «Exportar», que genera
+      un .xlsx o .csv con las mismas filas y filtros que se ven en pantalla.
+    </div>
+  </mat-card>
+</div>

@@ -1,0 +1,80 @@
+.cs-login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 16px;
+  box-sizing: border-box;
+  background: linear-gradient(160deg, var(--mat-sys-surface-container-low), var(--mat-sys-surface));
+}
+
+.cs-login-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 8px;
+}
+
+.cs-login-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 24px;
+}
+
+.cs-login-logo {
+  color: var(--mat-sys-primary);
+  font-size: 30px;
+  width: 30px;
+  height: 30px;
+}
+
+.cs-full {
+  width: 100%;
+}
+
+.cs-submit {
+  height: 44px;
+  margin-top: 4px;
+}
+
+.cs-login-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.cs-forgot {
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.cs-login-footer {
+  padding: 0 16px 16px;
+}
+
+.cs-demo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--mat-sys-surface-container-high);
+  font-size: 12px;
+}
+
+.cs-demo-body {
+  flex: 1 1 auto;
+}
+
+.cs-demo-text {
+  font-family: monospace;
+  font-size: 12px;
+}

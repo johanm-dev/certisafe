@@ -1,0 +1,17 @@
+allowBuilds:
+  '@parcel/watcher': true
+  esbuild: true
+  lmdb: true
+  msgpackr-extract: true
+# CertiSafe - frontend
+#
+# Este archivo no define un monorepo (el workspace tiene un solo paquete);
+# existe para declarar que dependencias nativas pueden ejecutar sus scripts de
+# instalacion. pnpm 10+ los bloquea por defecto, y sin ellos la aplicacion no
+# compila:
+#
+#   esbuild           -> binario nativo del empaquetador (lo usa @angular/build)
+#   lmdb              -> cache en disco de @angular/build
+#   @parcel/watcher   -> observacion de archivos para `ng serve`
+#   msgpackr-extract  -> acelerador nativo de la mensajeria de lmdb
+#

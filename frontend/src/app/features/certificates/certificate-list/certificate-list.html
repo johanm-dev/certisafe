@@ -1,0 +1,170 @@
+<div class="cs-page">
+  <div class="cs-cabecera">
+    <div>
+      <h1>{{ titulo() }}</h1>
+      <p class="cs-subtitulo">{{ subtitulo() }}</p>
+    </div>
+  </div>
+
+  @if (!esOperador()) {
+    <mat-card appearance="outlined" class="cs-filtros">
+      <div class="cs-row">
+        <mat-form-field appearance="outline" class="cs-buscador">
+          <mat-label>Buscar</mat-label>
+          <input
+            matInput
+            [formControl]="searchControl"
+            placeholder="Número, operario o taller"
+          />
+          <mat-icon matPrefix>search</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="cs-field-md">
+          <mat-label>Taller</mat-label>
+          <mat-select [formControl]="workshopControl">
+            <mat-option value="">Todos</mat-option>
+            @for (taller of talleres(); track taller.id) {
+              <mat-option [value]="taller.id">{{ taller.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="cs-field-sm">
+          <mat-label>Estado</mat-label>
+          <mat-select [formControl]="statusControl">
+            <mat-option value="">Todos</mat-option>
+            @for (estado of estados; track estado) {
+              <mat-option [value]="estado">{{ etiquetaEstado[estado] }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <button
+          mat-stroked-button
+          type="button"
+          (click)="limpiarFiltros()"
+          matTooltip="Quitar todos los filtros"
+        >
+          <mat-icon>filter_alt_off</mat-icon>
+          Limpiar
+        </button>
+      </div>
+    </mat-card>
+  }
+
+  <mat-card appearance="outlined" class="cs-tabla-card">
+    @if (loading()) {
+      <mat-progress-bar mode="indeterminate" />
+    }
+
+    <div class="cs-tabla-scroll">
+      <table
+        mat-table
+        [dataSource]="rows()"
+        matSort
+        [matSortActive]="sortField()"
+        [matSortDirection]="sortDirection()"
+        (matSortChange)="onSortChange($event)"
+      >
+        <ng-container matColumnDef="certificateNumber">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Número</th>
+          <td mat-cell *matCellDef="let certificado">
+            <span class="cs-cert-num">{{ certificado.certificateNumber }}</span>
+            <div class="cs-descripcion">Avala: {{ certificado.instructorName }}</div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="user">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Operario</th>
+          <td mat-cell *matCellDef="let certificado">
+            <div class="cs-nombre">{{ certificado.userFullName }}</div>
+            <div class="cs-descripcion">{{ certificado.userEmail }}</div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="workshop">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Taller</th>
+          <td mat-cell *matCellDef="let certificado">
+            <div class="cs-nombre">{{ certificado.workshopName }}</div>
+            <div class="cs-descripcion">
+              {{ certificado.workshopDate | date: 'mediumDate' }}
+            </div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="issuedAt">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Emitido</th>
+          <td mat-cell *matCellDef="let certificado">
+            {{ certificado.issuedAt | date: 'short' }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="expiresAt">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Vence</th>
+          <td mat-cell *matCellDef="let certificado">
+            <div>{{ certificado.expiresAt | date: 'short' }}</div>
+            @if (vigenciaDe(certificado)) {
+              <div class="cs-descripcion">{{ vigenciaDe(certificado) }}</div>
+            }
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Estado</th>
+          <td mat-cell *matCellDef="let certificado">
+            <span class="cs-chip" [class]="'cs-chip cs-chip--' + tonoDe(certificado)">
+              {{ etiquetaDe(certificado) }}
+            </span>
+            @if (certificado.revocationReason) {
+              <div class="cs-motivo" [matTooltip]="certificado.revocationReason">
+                {{ certificado.revocationReason }}
+              </div>
+            }
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef class="cs-acciones-col"></th>
+          <td mat-cell *matCellDef="let certificado" class="cs-acciones-col">
+            @if (!certificado.revoked) {
+              <button
+                matIconButton
+                type="button"
+                (click)="revocar(certificado)"
+                [attr.aria-label]="'Revocar la certificación ' + certificado.certificateNumber"
+                matTooltip="Revocar certificación"
+              >
+                <mat-icon>block</mat-icon>
+              </button>
+            }
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columnas()"></tr>
+        <tr mat-row *matRowDef="let fila; columns: columnas()"></tr>
+
+        <tr *matNoDataRow>
+          <td class="cs-vacio" [attr.colspan]="columnas().length">
+            @if (loading()) {
+              Cargando certificaciones…
+            } @else if (esOperador()) {
+              Todavía no tiene certificaciones. Se emiten cuando el instructor registra su
+              asistencia a un taller.
+            } @else {
+              No hay certificaciones que coincidan con los filtros.
+            }
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <mat-paginator
+      [length]="total()"
+      [pageSize]="pageSize()"
+      [pageIndex]="pageIndex()"
+      [pageSizeOptions]="[5, 10, 20, 50]"
+      (page)="onPageChange($event)"
+      showFirstLastButtons
+    />
+  </mat-card>
+</div>

@@ -1,0 +1,215 @@
+<div class="cs-page">
+  <div class="cs-cabecera">
+    <div>
+      <h1>Talleres</h1>
+      <p class="cs-subtitulo">
+        Capacitaciones programadas, en curso y dictadas. El estado solo avanza por las
+        transiciones que permite el ciclo de vida.
+      </p>
+    </div>
+    <span class="cs-spacer"></span>
+    @if (puedeExportar()) {
+      <cs-export-button [disabled]="vacio()" (exportar)="exportar($event)" />
+    }
+    @if (puedeCrear()) {
+      <button mat-flat-button type="button" (click)="nuevoTaller()">
+        <mat-icon>add</mat-icon>
+        Nuevo taller
+      </button>
+    }
+  </div>
+
+  <mat-card appearance="outlined" class="cs-filtros">
+    <div class="cs-row">
+      <mat-form-field appearance="outline" class="cs-buscador">
+        <mat-label>Buscar</mat-label>
+        <input matInput [formControl]="searchControl" placeholder="Nombre o lugar" />
+        <mat-icon matPrefix>search</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="cs-field-sm">
+        <mat-label>Estado</mat-label>
+        <mat-select [formControl]="statusControl">
+          <mat-option value="">Todos</mat-option>
+          @for (estado of estados; track estado) {
+            <mat-option [value]="estado">{{ etiquetaEstado[estado] }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="cs-field-sm">
+        <mat-label>Desde</mat-label>
+        <input matInput [matDatepicker]="pickerDesde" [formControl]="fromControl" />
+        <mat-datepicker-toggle matIconSuffix [for]="pickerDesde" />
+        <mat-datepicker #pickerDesde />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="cs-field-sm">
+        <mat-label>Hasta</mat-label>
+        <input matInput [matDatepicker]="pickerHasta" [formControl]="toControl" />
+        <mat-datepicker-toggle matIconSuffix [for]="pickerHasta" />
+        <mat-datepicker #pickerHasta />
+      </mat-form-field>
+
+      <button mat-stroked-button type="button" (click)="limpiarFiltros()" matTooltip="Quitar todos los filtros">
+        <mat-icon>filter_alt_off</mat-icon>
+        Limpiar
+      </button>
+    </div>
+  </mat-card>
+
+  <mat-card appearance="outlined" class="cs-tabla-card">
+    @if (loading()) {
+      <mat-progress-bar mode="indeterminate" />
+    }
+
+    <div class="cs-tabla-scroll">
+      <table
+        mat-table
+        [dataSource]="rows()"
+        matSort
+        [matSortActive]="sortField()"
+        [matSortDirection]="sortDirection()"
+        (matSortChange)="onSortChange($event)"
+      >
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Taller</th>
+          <td mat-cell *matCellDef="let taller">
+            <div class="cs-nombre">{{ taller.name }}</div>
+            @if (taller.description) {
+              <div class="cs-descripcion">{{ taller.description }}</div>
+            }
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="workshopDate">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Fecha</th>
+          <td mat-cell *matCellDef="let taller">{{ taller.workshopDate | date: 'medium' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="durationMinutes">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Duración</th>
+          <td mat-cell *matCellDef="let taller">{{ duracion(taller.durationMinutes) }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="location">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Lugar</th>
+          <td mat-cell *matCellDef="let taller">{{ taller.location }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="maxCapacity">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="cs-num">Cupos</th>
+          <td mat-cell *matCellDef="let taller" class="cs-num">
+            <div>{{ cuposDe(taller) }}</div>
+            <div class="cs-descripcion">{{ libresDe(taller) }} disponibles</div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="instructor">
+          <th mat-header-cell *matHeaderCellDef>Instructor</th>
+          <td mat-cell *matCellDef="let taller">
+            @if (taller.instructor; as instructor) {
+              {{ instructor.fullName }}
+            } @else {
+              <span class="cs-sin-dato">Sin asignar</span>
+            }
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Estado</th>
+          <td mat-cell *matCellDef="let taller">
+            <span class="cs-chip" [class]="'cs-chip cs-chip--' + tonoDe(taller)">
+              {{ etiquetaDe(taller) }}
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef class="cs-acciones-col"></th>
+          <td mat-cell *matCellDef="let taller" class="cs-acciones-col">
+            <button
+              matIconButton
+              type="button"
+              [matMenuTriggerFor]="acciones"
+              [attr.aria-label]="'Acciones para ' + taller.name"
+            >
+              <mat-icon>more_vert</mat-icon>
+            </button>
+
+            <mat-menu #acciones="matMenu">
+              <button mat-menu-item type="button" (click)="verHistorial(taller)">
+                <mat-icon>history</mat-icon>
+                <span>Ver historial</span>
+              </button>
+
+              @if (puedeCambiarEstado() && taller.allowedTransitions.length > 0) {
+                <button mat-menu-item type="button" (click)="cambiarEstado(taller)">
+                  <mat-icon>swap_horiz</mat-icon>
+                  <span>Cambiar estado</span>
+                </button>
+              }
+
+              @if (puedeEditar() && esEditable(taller)) {
+                <button mat-menu-item type="button" (click)="editarTaller(taller)">
+                  <mat-icon>edit</mat-icon>
+                  <span>Editar</span>
+                </button>
+              }
+
+              @if (puedeInscribir() && taller.status === 'PROGRAMADO' && taller.availableSeats > 0) {
+                <button mat-menu-item type="button" (click)="inscribirse(taller)">
+                  <mat-icon>how_to_reg</mat-icon>
+                  <span>{{ inscripcionPropia() ? 'Inscribirme' : 'Inscribir operario' }}</span>
+                </button>
+              }
+
+              @if (puedeInscribir() && taller.status === 'PROGRAMADO' && taller.availableSeats === 0) {
+                <button mat-menu-item type="button" disabled>
+                  <mat-icon>block</mat-icon>
+                  <span>Aforo completo</span>
+                </button>
+              }
+
+              @if (puedeAsignar() && esEditable(taller)) {
+                <button mat-menu-item type="button" (click)="asignarInstructor(taller)">
+                  <mat-icon>person_add</mat-icon>
+                  <span>Asignar instructor</span>
+                </button>
+              }
+
+              @if (puedeBorrar() && taller.status === 'PROGRAMADO') {
+                <button mat-menu-item type="button" (click)="eliminarTaller(taller)">
+                  <mat-icon>delete</mat-icon>
+                  <span>Eliminar</span>
+                </button>
+              }
+            </mat-menu>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columnas"></tr>
+        <tr mat-row *matRowDef="let fila; columns: columnas"></tr>
+
+        <tr *matNoDataRow>
+          <td class="cs-vacio" [attr.colspan]="columnas.length">
+            @if (loading()) {
+              Cargando talleres…
+            } @else {
+              No hay talleres que coincidan con los filtros.
+            }
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <mat-paginator
+      [length]="total()"
+      [pageSize]="pageSize()"
+      [pageIndex]="pageIndex()"
+      [pageSizeOptions]="[5, 10, 20, 50]"
+      (page)="onPageChange($event)"
+      showFirstLastButtons
+    />
+  </mat-card>
+</div>

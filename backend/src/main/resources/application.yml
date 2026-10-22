@@ -1,0 +1,106 @@
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: always
+
+spring:
+  application:
+    name: certisafe-backend
+
+  datasource:
+    # OJO: la base ya creada en este equipo se llama "Certisafe" (con mayuscula inicial).
+    # Si la recreas en minusculas, arranca con DB_NAME=certisafe
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:Certisafe}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      pool-name: CertiSafePool
+
+  jpa:
+    hibernate:
+      # El esquema lo manda certisafe_schema.sql. Hibernate solo VERIFICA que las
+      # entidades coincidan. Si una entidad no cuadra, la app NO arranca (a proposito).
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+        format_sql: true
+    show-sql: false
+
+  # Paginacion obligatoria: 20 elementos por defecto, 100 como maximo (evita peticiones abusivas).
+  data:
+    web:
+      pageable:
+        default-page-size: 20
+        max-page-size: 100
+        one-indexed-parameters: false
+
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+
+# ---------------------------------------------------------------------------
+# Configuracion propia de CertiSafe
+# ---------------------------------------------------------------------------
+certisafe:
+  jwt:
+    # OBLIGATORIO en produccion. Minimo 32 caracteres (HS256). Sobrescribir con JWT_SECRET.
+    secret: ${JWT_SECRET:certisafe-dev-secret-key-change-me-in-production-0123456789}
+    access-token-ttl-minutes: ${JWT_ACCESS_TTL_MINUTES:15}
+    refresh-token-ttl-days: ${JWT_REFRESH_TTL_DAYS:7}
+    issuer: certisafe
+
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+
+  bootstrap:
+    # Crea un usuario ADMIN la primera vez si la tabla users esta vacia.
+    enabled: ${BOOTSTRAP_ENABLED:true}
+    admin-email: ${BOOTSTRAP_ADMIN_EMAIL:admin@certisafe.local}
+    admin-password: ${BOOTSTRAP_ADMIN_PASSWORD:Admin123*}
+    admin-first-name: ${BOOTSTRAP_ADMIN_FIRST_NAME:Administrador}
+    admin-last-name: ${BOOTSTRAP_ADMIN_LAST_NAME:CertiSafe}
+
+  # RF-017 / RF-018: limites de la carga masiva.
+  import:
+    # Filas maximas por archivo (RNF-009: el sistema debe responder en tiempos razonables).
+    max-rows: ${IMPORT_MAX_ROWS:5000}
+    # Tamano del lote transaccional. Cada lote se confirma o se revierte completo (CA3 de la HU-11).
+    batch-size: ${IMPORT_BATCH_SIZE:500}
+
+  # RF-023: recuperacion de contrasena.
+  mail:
+    # Sin smtp-host no se intenta SMTP: el enlace se escribe en el log, que es lo que permite
+    # probar el flujo completo sin un servidor de correo. Con smtp-host configurado se envia
+    # de verdad y el enlace no se imprime.
+    smtp-host: ${MAIL_SMTP_HOST:}
+    smtp-port: ${MAIL_SMTP_PORT:587}
+    username: ${MAIL_SMTP_USERNAME:}
+    password: ${MAIL_SMTP_PASSWORD:}
+    from: ${MAIL_FROM:no-responder@certisafe.local}
+    # Donde abre el enlace de recuperacion. Debe apuntar al frontend.
+    frontend-url: ${FRONTEND_URL:http://localhost:4200}
+    token-ttl-minutes: ${RECOVERY_TOKEN_TTL_MINUTES:15}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+
+logging:
+  level:
+    root: INFO
+    com.certisafe: DEBUG

@@ -1,0 +1,94 @@
+.cs-import-card {
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+
+.cs-import-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+
+  h2 {
+    margin: 0 0 4px;
+    font-size: 1.1rem;
+  }
+}
+
+.cs-plantillas {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cs-ayuda {
+  margin: 12px 0 16px;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.875rem;
+}
+
+.cs-import-acciones {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/**
+ * Input de archivo recortado a 1px: el boton visible lo dispara, pero el control sigue
+ * existiendo para lectores de pantalla (y para las pruebas de interfaz), a diferencia de
+ * `hidden`, que lo saca del arbol de accesibilidad.
+ */
+.cs-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.cs-resumen {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+}
+
+.cs-errores {
+  margin-top: 12px;
+  max-height: 320px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 8px;
+
+  table {
+    width: 100%;
+    min-width: 640px;
+  }
+}
+
+.cs-datos {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.8125rem;
+}
+
+.cs-ok {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 0;
+  color: var(--mat-sys-primary);
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}

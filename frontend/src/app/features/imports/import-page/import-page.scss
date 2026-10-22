@@ -1,0 +1,12 @@
+.cs-nota {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 16px 20px;
+  background: var(--mat-sys-surface-container-low);
+  font-size: 0.875rem;
+
+  mat-icon {
+    color: var(--mat-sys-primary);
+  }
+}

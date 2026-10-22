@@ -1,0 +1,22 @@
+// Los estilos comunes de los listados (cabecera, filtros, chips, tabla) están en
+// `src/styles.scss`. Aquí queda solo lo propio del reporte de cumplimiento.
+
+table {
+  min-width: 1180px;
+}
+
+// El resaltado de "no apto para zonas de alto riesgo" (RF-020, criterio 3). Es la única
+// señal que el caso de uso pide expresamente sobre la presentación, y por eso no basta con
+// el chip de la columna "Apto": tiene que verse al recorrer la tabla entera.
+// El selector repite `.mat-mdc-row` para ganarle en especificidad al estilo de Material.
+.mat-mdc-row.cs-no-apto {
+  background: #fff5f5;
+
+  td:first-child {
+    box-shadow: inset 3px 0 0 #b3261e;
+  }
+}
+
+.mat-mdc-row.cs-no-apto:hover {
+  background: #ffecec;
+}

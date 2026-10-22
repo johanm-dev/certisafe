@@ -1,0 +1,251 @@
+// Estilos globales de CertiSafe.
+//
+// El tema de Angular Material (paleta, tipografia y densidad) ya lo define el bloque
+// `mat.theme(...)` que genero `ng add @angular/material` mas abajo en este mismo archivo.
+@use '@angular/material' as mat;
+
+html {
+  height: 100%;
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$azure-palette,
+        tertiary: mat.$blue-palette,
+      ),
+      typography: Roboto,
+      density: 0,
+    )
+  );
+}
+
+body {
+  // Tema claro por defecto. Con `light dark` se respetaria la preferencia del sistema.
+  color-scheme: light;
+
+  background-color: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-medium);
+
+  margin: 0;
+  height: 100%;
+}
+
+// ---------------------------------------------------------------------------
+// Utilerias de disposicion
+// ---------------------------------------------------------------------------
+
+.cs-page {
+  padding: 24px;
+  max-width: 1500px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.cs-spacer {
+  flex: 1 1 auto;
+}
+
+.cs-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.cs-field-sm {
+  width: 180px;
+}
+
+.cs-field-md {
+  width: 260px;
+}
+
+// ---------------------------------------------------------------------------
+// Pantallas de listado (cabecera, filtros y tabla)
+//
+// Viven aqui, y no en el scss de cada pantalla, porque las comparten los tres listados
+// (talleres, usuarios e inscripciones). Cada pantalla conserva en su propio archivo solo
+// lo que es suyo: por ejemplo, el ancho minimo de su tabla.
+// ---------------------------------------------------------------------------
+
+.cs-cabecera {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.cs-cabecera h1 {
+  margin: 0 0 4px;
+  font-size: 28px;
+  font-weight: 500;
+}
+
+.cs-subtitulo {
+  margin: 0;
+  max-width: 620px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.cs-filtros {
+  padding: 16px 16px 0;
+  margin-bottom: 16px;
+}
+
+.cs-filtros .cs-row {
+  gap: 12px;
+}
+
+.cs-buscador {
+  width: 280px;
+}
+
+.cs-tabla-card {
+  overflow: hidden;
+}
+
+.cs-tabla-scroll {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+}
+
+.cs-nombre {
+  font-weight: 500;
+}
+
+.cs-descripcion {
+  max-width: 340px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.cs-num {
+  text-align: right;
+}
+
+// Número de certificado: es el identificador que el usuario cita al pedir una verificación,
+// así que se escribe en monoespaciada y con algo de peso. Lo usan la pantalla de
+// certificados y la de inscripciones, por eso vive aquí y no en un componente.
+.cs-cert-num {
+  font-family: 'Roboto Mono', 'Consolas', monospace;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+
+.cs-acciones-col {
+  width: 56px;
+  text-align: center;
+}
+
+.cs-sin-dato {
+  color: var(--mat-sys-outline);
+  font-size: 13px;
+}
+
+.cs-vacio {
+  padding: 40px 16px;
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// Formularios dentro de dialogos (alta y edicion de talleres y de usuarios).
+.cs-form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 420px;
+  max-width: 560px;
+  padding-top: 8px;
+}
+
+.cs-form-row {
+  display: flex;
+  gap: 12px;
+}
+
+.cs-form-row > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+// La cabecera de la tabla se queda visible al desplazarse por listados largos.
+// El selector se repite para ganarle en especificidad al estilo propio de Material,
+// que es el que se aplica cuando ambas reglas pesan igual.
+.mat-mdc-header-row {
+  background: var(--mat-sys-surface-container-low);
+}
+
+.mat-mdc-table .mat-mdc-header-cell {
+  font-weight: 600;
+}
+
+// ---------------------------------------------------------------------------
+// Etiqueta de estado del taller
+// ---------------------------------------------------------------------------
+
+.cs-chip {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.cs-chip--info {
+  background: #e3f2fd;
+  color: #0d47a1;
+}
+
+.cs-chip--warn {
+  background: #fff8e1;
+  color: #8a6d00;
+}
+
+.cs-chip--ok {
+  background: #e8f5e9;
+  color: #1b5e20;
+}
+
+.cs-chip--muted {
+  background: #eceff1;
+  color: #546e7a;
+}
+
+.cs-chip--error {
+  background: #ffebee;
+  color: #b3261e;
+}
+
+// ---------------------------------------------------------------------------
+// Avisos emergentes (MatSnackBar). Se estilan aqui porque el panel del snackbar se
+// crea fuera del arbol del componente y no alcanzan sus estilos encapsulados.
+// ---------------------------------------------------------------------------
+
+.cs-snack-ok {
+  --mdc-snackbar-container-color: #1b5e20;
+  --mdc-snackbar-supporting-text-color: #ffffff;
+  --mat-snack-bar-button-color: #c8e6c9;
+}
+
+.cs-snack-error {
+  --mdc-snackbar-container-color: #b3261e;
+  --mdc-snackbar-supporting-text-color: #ffffff;
+  --mat-snack-bar-button-color: #ffdad6;
+}
+
+.cs-snack-info {
+  --mdc-snackbar-container-color: #0d47a1;
+  --mdc-snackbar-supporting-text-color: #ffffff;
+  --mat-snack-bar-button-color: #bbdefb;
+}

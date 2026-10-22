@@ -1,0 +1,88 @@
+<mat-toolbar class="cs-toolbar">
+  <span class="cs-brand">
+    <mat-icon>health_and_safety</mat-icon>
+    CertiSafe
+  </span>
+
+  <span class="cs-spacer"></span>
+
+  @if (user(); as usuario) {
+    <span class="cs-user">
+      <mat-icon>account_circle</mat-icon>
+      <span class="cs-user-name">{{ usuario.fullName }}</span>
+      <span class="cs-role">{{ usuario.role }}</span>
+    </span>
+  }
+
+  <button
+    matIconButton
+    type="button"
+    matTooltip="Cambiar contraseña"
+    aria-label="Cambiar contraseña"
+    (click)="cambiarContrasena()"
+  >
+    <mat-icon>password</mat-icon>
+  </button>
+
+  <button
+    matIconButton
+    type="button"
+    matTooltip="Cerrar sesión"
+    aria-label="Cerrar sesión"
+    (click)="logout()"
+  >
+    <mat-icon>logout</mat-icon>
+  </button>
+</mat-toolbar>
+
+<mat-sidenav-container class="cs-container">
+  <mat-sidenav mode="side" opened class="cs-sidenav" aria-label="Menú principal">
+    <mat-nav-list>
+      @if (puedeVerTalleres()) {
+        <a mat-list-item routerLink="/talleres" routerLinkActive="cs-item-active">
+          <mat-icon matListItemIcon>event</mat-icon>
+          <span matListItemTitle>Talleres</span>
+        </a>
+      }
+
+      @if (puedeVerInscripciones()) {
+        <a mat-list-item routerLink="/inscripciones" routerLinkActive="cs-item-active">
+          <mat-icon matListItemIcon>how_to_reg</mat-icon>
+          <span matListItemTitle>{{ etiquetaInscripciones() }}</span>
+        </a>
+      }
+
+      @if (puedeVerCertificados()) {
+        <a mat-list-item routerLink="/certificados" routerLinkActive="cs-item-active">
+          <mat-icon matListItemIcon>workspace_premium</mat-icon>
+          <span matListItemTitle>{{ etiquetaCertificados() }}</span>
+        </a>
+      }
+
+      @if (puedeVerUsuarios()) {
+        <a mat-list-item routerLink="/usuarios" routerLinkActive="cs-item-active">
+          <mat-icon matListItemIcon>manage_accounts</mat-icon>
+          <span matListItemTitle>Usuarios</span>
+        </a>
+      }
+
+      @if (puedeVerReportes()) {
+        <a mat-list-item routerLink="/reportes" routerLinkActive="cs-item-active">
+          <mat-icon matListItemIcon>assessment</mat-icon>
+          <span matListItemTitle>Reporte de cumplimiento</span>
+        </a>
+      }
+
+      @if (puedeImportar()) {
+        <a mat-list-item routerLink="/importacion" routerLinkActive="cs-item-active">
+          <mat-icon matListItemIcon>upload_file</mat-icon>
+          <span matListItemTitle>Importación</span>
+        </a>
+      }
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content class="cs-content">
+    <router-outlet />
+  </mat-sidenav-content>
+</mat-sidenav-container>
