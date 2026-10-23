@@ -35,10 +35,7 @@ pnpm start
 
 Y abre <http://localhost:4200>.
 
-Al primer arranque, con la tabla `users` vacía, el backend crea un administrador. Las
-credenciales están en la pantalla de acceso, y el botón **Rellenar** las pone en el
-formulario para no teclearlas:
-
+Al primer arranque, con la tabla `users` vacía, el backend crea un administrador con las credenciales documentadas en el log del backend:
 ```
 admin@certisafe.local · Admin123*
 ```

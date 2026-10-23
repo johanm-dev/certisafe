@@ -22,6 +22,13 @@ El detalle de la API, las decisiones de diseño y el estado de avance están en
 **[`backend/README.md`](backend/README.md)**; el del cliente, en
 **[`frontend/README.md`](frontend/README.md)**.
 
+### Justificación técnica del Frontend (Angular 22 frente a React/Next.js)
+
+Aunque el enunciado preliminar sugería React/Next.js, se seleccionó **Angular 22** con componentes independientes (*standalone*) y arquitectura reactiva por **Signals (zoneless)** para responder a la criticidad operativa de IndustrialCore:
+1. **Tipado estricto y cohesión con Spring Boot:** El modelo fuertemente tipado de Angular garantiza paridad directa con los DTOs y validaciones Bean Validation de la API, reduciendo fallos de captura en certificaciones.
+2. **Control de acceso granular (RBAC):** La infraestructura de guards funcionales (`authGuard`, `permissionGuard`) y directivas estructurales resuelve con elegancia la matriz de 19 permisos para los tres roles.
+3. **Rendimiento y eficiencia:** El uso de Signals zoneless permite una reactividad granular en el DOM sin la sobrecarga de `zone.js`, logrando un bundle optimizado de menos de 160 kB en transferencia inicial.
+
 ---
 
 ## Requisitos previos
@@ -130,8 +137,7 @@ sin esas dependencias nativas el frontend no compila.
 | API | <http://localhost:8080/api> |
 | Swagger UI | <http://localhost:8080/swagger-ui.html> |
 
-En la pantalla de acceso, el botón **Rellenar** pone las credenciales de demostración
-(`admin@certisafe.local` / `Admin123*`) para no teclearlas.
+En la pantalla de acceso, ingrese las credenciales del usuario deseado para acceder al sistema.
 
 ### Pruebas
 

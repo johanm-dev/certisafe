@@ -48,12 +48,6 @@ export class Login {
     this.passwordVisible.update((visible) => !visible);
   }
 
-  /** Rellena las credenciales de demostracion. Nunca se dejan puestas por defecto. */
-  fillDemoCredentials(): void {
-    this.form.setValue({ email: 'admin@certisafe.local', password: 'Admin123*' });
-    this.errorMessage.set(null);
-  }
-
   submit(): void {
     if (this.loading()) {
       return;

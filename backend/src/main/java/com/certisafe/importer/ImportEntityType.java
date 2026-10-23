@@ -17,7 +17,7 @@ public enum ImportEntityType {
             List.of("correo", "nombres", "apellidos", "rol", "contrasena", "telefono"),
             List.of("correo", "nombres", "apellidos", "contrasena"),
             List.of("ana.gomez@certisafe.local", "Ana Maria", "Gomez Ruiz",
-                    "OPERATOR", "Operario123*", "3001234567")
+                    "OPERATOR", "Ejemplo123*", "3001234567")
     ),
 
     WORKSHOPS(

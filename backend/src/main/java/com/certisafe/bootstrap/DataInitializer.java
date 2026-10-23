@@ -38,7 +38,7 @@ public class DataInitializer implements ApplicationRunner {
     public DataInitializer(
             @Value("${certisafe.bootstrap.enabled:true}") boolean enabled,
             @Value("${certisafe.bootstrap.admin-email:admin@certisafe.local}") String adminEmail,
-            @Value("${certisafe.bootstrap.admin-password:Admin123*}") String adminPassword,
+            @Value("${certisafe.bootstrap.admin-password:}") String adminPassword,
             @Value("${certisafe.bootstrap.admin-first-name:Administrador}") String adminFirstName,
             @Value("${certisafe.bootstrap.admin-last-name:CertiSafe}") String adminLastName,
             UserRepository userRepository,

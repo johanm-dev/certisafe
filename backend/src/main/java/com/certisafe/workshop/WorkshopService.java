@@ -178,6 +178,10 @@ public class WorkshopService {
         workshop.setLocation(request.location().trim());
         workshop.setMaxCapacity(request.maxCapacity());
 
+        if (workshop.getInstructor() != null) {
+            validateInstructorNoOverlap(workshop.getInstructor(), workshop);
+        }
+
         return WorkshopResponse.from(workshopRepository.save(workshop), inscritos);
     }
 
@@ -225,6 +229,8 @@ public class WorkshopService {
             throw BusinessException.conflict("Ese instructor ya está asignado a este taller");
         }
 
+        validateInstructorNoOverlap(instructor, workshop);
+
         // Se conserva la asignación anterior marcada como no vigente: es el historial.
         assignmentRepository.findByWorkshopIdAndIsCurrentTrue(id).ifPresent(previous -> {
             previous.setIsCurrent(false);
@@ -263,6 +269,37 @@ public class WorkshopService {
         statusHistoryRepository.deleteByWorkshopId(id);
         assignmentRepository.deleteAll(assignmentRepository.findByWorkshopIdOrderByAssignedAtDesc(id));
         workshopRepository.delete(workshop);
+    }
+
+    private void validateInstructorNoOverlap(User instructor, Workshop targetWorkshop) {
+        if (targetWorkshop.getWorkshopDate() == null || targetWorkshop.getDurationMinutes() == null) {
+            return;
+        }
+        OffsetDateTime targetStart = targetWorkshop.getWorkshopDate();
+        OffsetDateTime targetEnd = targetStart.plusMinutes(targetWorkshop.getDurationMinutes());
+
+        List<Workshop> activeWorkshops = workshopRepository.findAll((root, query, cb) -> cb.and(
+                cb.equal(root.get("instructor").get("id"), instructor.getId()),
+                root.get("status").in(WorkshopStatus.PROGRAMADO, WorkshopStatus.EN_PROGRESO)
+        ));
+
+        for (Workshop other : activeWorkshops) {
+            if (other.getId() != null && other.getId().equals(targetWorkshop.getId())) {
+                continue;
+            }
+            if (other.getWorkshopDate() == null || other.getDurationMinutes() == null) {
+                continue;
+            }
+            OffsetDateTime otherStart = other.getWorkshopDate();
+            OffsetDateTime otherEnd = otherStart.plusMinutes(other.getDurationMinutes());
+
+            if (targetStart.isBefore(otherEnd) && targetEnd.isAfter(otherStart)) {
+                throw BusinessException.conflict(
+                        "El instructor " + instructor.getEmail() + " ya tiene asignado el taller '"
+                                + other.getName() + "' con solapamiento horario ("
+                                + otherStart + " a " + otherEnd + ")");
+            }
+        }
     }
 
     // ------------------------------------------------------------------ utilidades

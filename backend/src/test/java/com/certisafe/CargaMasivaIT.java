@@ -167,7 +167,9 @@ class CargaMasivaIT extends ReglasDeNegocioIT {
         assertThat(resultado.status()).isEqualTo(BatchStatus.COMPLETADO);
         assertThat(resultado.createdRows()).isEqualTo(1);
 
-        var importado = workshopService.list(null, null, null, null, null, Pageable.ofSize(10), admin)
+        // Se busca por nombre y no en el listado completo: la base viva puede tener mas
+        // talleres que la pagina y el importado (fecha 31/12) quedaria siempre al final.
+        var importado = workshopService.list(TALLER_IMPORTADO, null, null, null, null, Pageable.ofSize(10), admin)
                 .content()
                 .stream()
                 .filter(t -> t.name().equals(TALLER_IMPORTADO))
