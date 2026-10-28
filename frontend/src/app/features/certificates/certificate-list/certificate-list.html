@@ -4,7 +4,129 @@
       <h1>{{ titulo() }}</h1>
       <p class="cs-subtitulo">{{ subtitulo() }}</p>
     </div>
+
+    @if (esOperador()) {
+      <div class="cs-acciones-cabecera">
+        <span
+          [matTooltip]="
+            cumpleIngresoEmpresa()
+              ? 'Genera un código QR aleatorio para validar su ingreso a la empresa'
+              : 'Debe contar con las 3 certificaciones obligatorias vigentes para poder generar el QR'
+          "
+        >
+          <button
+            mat-flat-button
+            type="button"
+            [disabled]="!cumpleIngresoEmpresa()"
+            (click)="generarQrSimulacionIngreso()"
+          >
+            <mat-icon>qr_code_2</mat-icon>
+            {{ datosQr() ? 'Generar nuevo QR aleatorio' : 'Generar QR de ingreso' }}
+          </button>
+        </span>
+      </div>
+    }
   </div>
+
+  @if (esOperador()) {
+    <mat-card
+      appearance="outlined"
+      class="cs-ingreso-card"
+      [class.cs-ingreso-card--ok]="cumpleIngresoEmpresa()"
+      [class.cs-ingreso-card--pendiente]="!cumpleIngresoEmpresa()"
+    >
+      <div class="cs-ingreso-layout">
+        <div class="cs-ingreso-info">
+          <div class="cs-ingreso-encabezado">
+            <div class="cs-ingreso-badge">
+              <mat-icon>{{ cumpleIngresoEmpresa() ? 'verified_user' : 'gpp_maybe' }}</mat-icon>
+              <div>
+                <div class="cs-ingreso-titulo">
+                  @if (cumpleIngresoEmpresa()) {
+                    HABILITADO PARA INGRESAR A LA EMPRESA ({{ cantidadObligatoriosCumplidos() }} / 3
+                    talleres obligatorios vigentes)
+                  } @else {
+                    INGRESO A LA EMPRESA RESTRINGIDO ({{ cantidadObligatoriosCumplidos() }} / 3
+                    talleres obligatorios vigentes)
+                  }
+                </div>
+                <div class="cs-ingreso-sub">
+                  @if (cumpleIngresoEmpresa()) {
+                    Cumple con las 3 certificaciones obligatorias vigentes exigidas por
+                    IndustrialCore. Ya puede generar su código QR de ingreso a la empresa.
+                  } @else {
+                    Para entrar a la empresa y habilitar el generador de QR debe tener
+                    certificación vigente en los 3 talleres obligatorios listados abajo.
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cs-requisitos-grid">
+            @for (req of estadoRequisitosObligatorios(); track req.nombre) {
+              <div
+                class="cs-requisito-item"
+                [class.cs-requisito-item--ok]="req.cumplido"
+                [class.cs-requisito-item--falta]="!req.cumplido"
+              >
+                <mat-icon class="cs-requisito-icono">
+                  {{ req.cumplido ? 'check_circle' : 'cancel' }}
+                </mat-icon>
+                <div class="cs-requisito-detalle">
+                  <div class="cs-requisito-nombre">{{ req.nombre }}</div>
+                  @if (req.cumplido) {
+                    <div class="cs-requisito-meta">
+                      <span class="cs-chip cs-chip--ok">Vigente</span>
+                      <span class="cs-cert-num">{{ req.certificadoNumero }}</span>
+                    </div>
+                    <div class="cs-requisito-vence">{{ req.venceEn }}</div>
+                  } @else {
+                    <div class="cs-requisito-meta">
+                      <span class="cs-chip cs-chip--error">Falta certificación vigente</span>
+                    </div>
+                    <div class="cs-requisito-vence">Requisito obligatorio de ingreso</div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        @if (cumpleIngresoEmpresa() && datosQr(); as qr) {
+          <div class="cs-qr-panel">
+            <div class="cs-qr-etiqueta">PASE QR DE INGRESO EMPRESARIAL</div>
+            <svg
+              class="cs-qr-svg"
+              viewBox="0 0 25 25"
+              role="img"
+              [attr.aria-label]="'Código QR de validación ' + qr.codigoVerificacion"
+            >
+              <rect width="25" height="25" fill="#ffffff" rx="1.5" />
+              @for (fila of qr.matrizQr; track $index; let r = $index) {
+                @for (celda of fila; track $index; let c = $index) {
+                  @if (celda) {
+                    <rect
+                      [attr.x]="c + 2"
+                      [attr.y]="r + 2"
+                      width="1"
+                      height="1"
+                      fill="#0f172a"
+                    />
+                  }
+                }
+              }
+            </svg>
+            <div class="cs-qr-codigo">{{ qr.codigoVerificacion }}</div>
+            <div class="cs-qr-operario">{{ qr.operarioNombre }}</div>
+            <div class="cs-qr-fecha">
+              Validado: {{ qr.generadoEn | date: 'short' }} · 3/3 Vigentes
+            </div>
+          </div>
+        }
+      </div>
+    </mat-card>
+  }
 
   @if (!esOperador()) {
     <mat-card appearance="outlined" class="cs-filtros">

@@ -199,6 +199,16 @@ public class WorkshopService {
         if (target == WorkshopStatus.CANCELADO && !StringUtils.hasText(reason)) {
             throw new BusinessException("Debe indicar el motivo de la cancelación");
         }
+        if (target == WorkshopStatus.EN_PROGRESO) {
+            long inscritos = enrollmentRepository.countByWorkshopId(id);
+            long minimoRequerido = (long) Math.ceil(workshop.getMaxCapacity() * 0.60);
+            if (inscritos < minimoRequerido) {
+                throw BusinessException.conflict(
+                        "No se puede iniciar el taller sin alcanzar al menos el 60% del aforo ("
+                                + minimoRequerido + " de " + workshop.getMaxCapacity()
+                                + " cupos requeridos; inscritos actuales: " + inscritos + ")");
+            }
+        }
 
         User autor = requireUser(actor.getId());
         requireOwnedByInstructor(workshop, actor, "cambiar su estado");

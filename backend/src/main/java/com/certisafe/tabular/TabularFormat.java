@@ -13,7 +13,8 @@ import java.util.Locale;
 public enum TabularFormat {
 
     CSV("csv", "text/csv;charset=UTF-8"),
-    XLSX("xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    XLSX("xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+    PDF("pdf", "application/pdf");
 
     private final String extension;
     private final String contentType;
@@ -38,8 +39,9 @@ public enum TabularFormat {
         return switch (value.trim().toLowerCase(Locale.ROOT)) {
             case "csv" -> CSV;
             case "xlsx", "excel" -> XLSX;
+            case "pdf" -> PDF;
             default -> throw new BusinessException(
-                    "Formato no soportado: " + value + ". Use csv o xlsx");
+                    "Formato no soportado: " + value + ". Use csv, xlsx o pdf");
         };
     }
 }

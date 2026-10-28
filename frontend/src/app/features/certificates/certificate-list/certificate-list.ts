@@ -30,7 +30,90 @@ import {
 import { Workshop } from '@core/models/workshop.model';
 import { NotificationService } from '@core/notification/notification.service';
 import { debounceTime, distinctUntilChanged, startWith } from 'rxjs';
+import { NOMBRES_TALLER_PREDETERMINADOS } from '../../workshops/workshop-form-dialog/workshop-form-dialog';
 import { RevokeDialog, RevokeDialogData } from '../revoke-dialog/revoke-dialog';
+
+export interface RequisitoTallerObligatorio {
+  nombre: string;
+  cumplido: boolean;
+  certificadoNumero: string | null;
+  venceEn: string | null;
+  esSimulado: boolean;
+}
+
+export interface DatosQrAcceso {
+  codigoVerificacion: string;
+  generadoEn: Date;
+  operarioNombre: string;
+  operarioEmail: string;
+  matrizQr: boolean[][];
+}
+
+function normalizarTexto(texto: string): string {
+  return texto
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
+/**
+ * Construye una matriz 21x21 con patrones de posicionamiento reales de un código QR (Versión 1)
+ * y módulos de datos aleatorios para simular la validación de ingreso en portería/planta.
+ */
+function generarMatrizQrAleatoria(): boolean[][] {
+  const size = 21;
+  const grid: boolean[][] = Array.from({ length: size }, () => Array<boolean>(size).fill(false));
+  const reservado: boolean[][] = Array.from({ length: size }, () =>
+    Array<boolean>(size).fill(false),
+  );
+
+  const colocarFinder = (filaIni: number, colIni: number): void => {
+    for (let r = -1; r <= 7; r++) {
+      for (let c = -1; c <= 7; c++) {
+        const rr = filaIni + r;
+        const cc = colIni + c;
+        if (rr < 0 || rr >= size || cc < 0 || cc >= size) continue;
+        reservado[rr][cc] = true;
+        const enBordeExterior = r >= 0 && r <= 6 && (c === 0 || c === 6);
+        const enTapaExterior = c >= 0 && c <= 6 && (r === 0 || r === 6);
+        const enCentro = r >= 2 && r <= 4 && c >= 2 && c <= 4;
+        grid[rr][cc] = enBordeExterior || enTapaExterior || enCentro;
+      }
+    }
+  };
+
+  colocarFinder(0, 0);
+  colocarFinder(0, size - 7);
+  colocarFinder(size - 7, 0);
+
+  // Patrones de sincronización (timing patterns)
+  for (let i = 8; i < size - 8; i++) {
+    reservado[6][i] = true;
+    reservado[i][6] = true;
+    grid[6][i] = i % 2 === 0;
+    grid[i][6] = i % 2 === 0;
+  }
+
+  // Módulos aleatorios para el resto de la matriz
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      if (!reservado[r][c]) {
+        grid[r][c] = Math.random() > 0.46;
+      }
+    }
+  }
+
+  return grid;
+}
+
+function generarCodigoQrAleatorio(): string {
+  const bloque = () =>
+    Math.floor(0x1000 + Math.random() * 0x9000)
+      .toString(16)
+      .toUpperCase();
+  return `QR-CS-${bloque()}-${bloque()}`;
+}
 
 /**
  * Certificaciones: consulta del historial (RF-016) y revocación.
@@ -109,6 +192,59 @@ export class CertificateList {
   // --- Resultado ---
   readonly loading = signal(false);
   readonly result = signal<PageResponse<Certificate> | null>(null);
+
+  /** Todos los certificados del operario para verificar los 3 talleres obligatorios. */
+  readonly todosMisCertificados = signal<Certificate[]>([]);
+
+  /** Código QR aleatorio de acceso a la empresa (solo disponible con los 3 talleres vigentes). */
+  readonly datosQr = signal<DatosQrAcceso | null>(null);
+
+  /** Los 3 talleres obligatorios exigidos para el ingreso a la empresa. */
+  readonly talleresObligatorios = NOMBRES_TALLER_PREDETERMINADOS;
+
+  /** Evaluación real de cada uno de los 3 talleres obligatorios para ingresar a la empresa. */
+  readonly estadoRequisitosObligatorios = computed<RequisitoTallerObligatorio[]>(() => {
+    const reales = this.todosMisCertificados();
+
+    return this.talleresObligatorios.map((nombreTaller) => {
+      const normalizado = normalizarTexto(nombreTaller);
+      const realVigente = reales.find((c) => {
+        if (c.status !== 'VIGENTE') {
+          return false;
+        }
+        const nombreCert = normalizarTexto(c.workshopName);
+        return nombreCert === normalizado || nombreCert.includes(normalizado);
+      });
+      if (realVigente) {
+        return {
+          nombre: nombreTaller,
+          cumplido: true,
+          certificadoNumero: realVigente.certificateNumber,
+          venceEn: this.vigenciaDe(realVigente),
+          esSimulado: false,
+        };
+      }
+
+      return {
+        nombre: nombreTaller,
+        cumplido: false,
+        certificadoNumero: null,
+        venceEn: null,
+        esSimulado: false,
+      };
+    });
+  });
+
+  readonly cantidadObligatoriosCumplidos = computed(
+    () => this.estadoRequisitosObligatorios().filter((r) => r.cumplido).length,
+  );
+
+  readonly cumpleIngresoEmpresa = computed(
+    () =>
+      this.cantidadObligatoriosCumplidos() === this.talleresObligatorios.length &&
+      this.talleresObligatorios.length === 3,
+  );
+
   readonly rows = computed(() => this.result()?.content ?? []);
   readonly total = computed(() => this.result()?.totalElements ?? 0);
 
@@ -175,6 +311,19 @@ export class CertificateList {
       const suscripcion = peticion.subscribe({
         next: (pagina) => {
           this.result.set(pagina);
+          if (this.esOperador()) {
+            if (pagina.totalElements <= pagina.content.length) {
+              this.todosMisCertificados.set(pagina.content);
+            } else {
+              this.api.mine({ page: 0, size: 100, sort: 'issuedAt,desc' }).subscribe({
+                next: (todos) => this.todosMisCertificados.set(todos.content),
+                error: () => this.todosMisCertificados.set(pagina.content),
+              });
+            }
+            if (!this.cumpleIngresoEmpresa()) {
+              this.datosQr.set(null);
+            }
+          }
           this.loading.set(false);
         },
         error: (error: unknown) => {
@@ -185,6 +334,32 @@ export class CertificateList {
 
       onCleanup(() => suscripcion.unsubscribe());
     });
+  }
+
+  /**
+   * Genera un código QR aleatorio de validación para control de acceso únicamente cuando el
+   * operario cuenta con las 3 certificaciones obligatorias vigentes.
+   */
+  generarQrSimulacionIngreso(): void {
+    if (!this.cumpleIngresoEmpresa()) {
+      this.notifications.error(
+        'Debe tener vigentes los 3 talleres obligatorios para poder generar el QR de ingreso a la empresa.',
+      );
+      return;
+    }
+
+    const usuario = this.auth.user();
+    const nuevoQr: DatosQrAcceso = {
+      codigoVerificacion: generarCodigoQrAleatorio(),
+      generadoEn: new Date(),
+      operarioNombre: usuario?.fullName ?? 'Operario IndustrialCore',
+      operarioEmail: usuario?.email ?? '',
+      matrizQr: generarMatrizQrAleatoria(),
+    };
+    this.datosQr.set(nuevoQr);
+    this.notifications.success(
+      `QR de ingreso ${nuevoQr.codigoVerificacion} generado: 3/3 talleres obligatorios vigentes.`,
+    );
   }
 
   onSortChange(sort: Sort): void {

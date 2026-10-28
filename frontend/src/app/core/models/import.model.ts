@@ -24,5 +24,5 @@ export interface ImportResult {
   errors: ImportError[];
 }
 
-/** Formatos de exportacion (RF-019). */
-export type ExportFormat = 'csv' | 'xlsx';
+/** Formatos de exportacion (RF-019 y Reportes Ejecutivos PDF). */
+export type ExportFormat = 'csv' | 'xlsx' | 'pdf';

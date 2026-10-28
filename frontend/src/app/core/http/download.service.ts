@@ -1,6 +1,8 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
+import { AuthService } from '@core/auth/auth.service';
 import { NotificationService } from '@core/notification/notification.service';
+import { buildExecutivePdfReport, parseCsvContent } from '@core/pdf/pdf-report-builder';
 import { describeHttpError } from './http-error';
 
 /** Valor admitido en los parametros de una descarga. */
@@ -16,19 +18,24 @@ export type DownloadValue = string | number | boolean | null | undefined;
 @Injectable({ providedIn: 'root' })
 export class DownloadService {
   private readonly http = inject(HttpClient);
+  private readonly auth = inject(AuthService);
   private readonly notifications = inject(NotificationService);
 
   /**
-   * Pide la url y guarda el archivo. Si falla, avisa con el mensaje del backend.
+   * Pide la url y guarda el archivo. Si el formato solicitado es `pdf`, obtiene el conjunto
+   * completo de datos exportados y genera el Informe Ejecutivo en PDF con proposito, datos
+   * actuales y graficas interpretativas.
    *
    * @param params          filtros de la peticion; los vacios se omiten
    * @param nombrePorDefecto nombre a usar si el servidor no manda Content-Disposition
    */
   descargar(url: string, params: Record<string, DownloadValue>, nombrePorDefecto: string): void {
+    const esPdf = String(params['format'] ?? '').toLowerCase() === 'pdf';
     let httpParams = new HttpParams();
     for (const [clave, valor] of Object.entries(params)) {
       if (valor !== undefined && valor !== null && valor !== '') {
-        httpParams = httpParams.set(clave, String(valor));
+        const valorReal = clave === 'format' && esPdf ? 'csv' : String(valor);
+        httpParams = httpParams.set(clave, valorReal);
       }
     }
 
@@ -37,11 +44,42 @@ export class DownloadService {
         if (!respuesta.body) {
           return;
         }
+        if (esPdf) {
+          void this.generarYGuardarPdf(url, params, respuesta.body, nombrePorDefecto);
+          return;
+        }
         const nombre = nombreDeArchivo(respuesta.headers.get('Content-Disposition')) ?? nombrePorDefecto;
         this.guardar(respuesta.body, nombre);
       },
       error: (error: unknown) => void this.avisarError(error),
     });
+  }
+
+  private async generarYGuardarPdf(
+    url: string,
+    params: Record<string, DownloadValue>,
+    csvBlob: Blob,
+    nombrePorDefecto: string,
+  ): Promise<void> {
+    try {
+      const csvText = await csvBlob.text();
+      const { headers, rows } = parseCsvContent(csvText);
+      const usuarioActual = this.auth.user();
+      const pdfBlob = buildExecutivePdfReport({
+        endpointUrl: url,
+        filters: params,
+        generatedByName: usuarioActual?.fullName ?? 'Administrador CertiSafe',
+        generatedByRole: usuarioActual?.role ?? 'ADMIN',
+        headers,
+        rows,
+      });
+
+      const hoy = new Date().toISOString().slice(0, 10);
+      const base = nombrePorDefecto.replace(/\.[^.]+$/, '');
+      this.guardar(pdfBlob, `informe-${base}-${hoy}.pdf`);
+    } catch {
+      this.notifications.error('No fue posible generar el informe en formato PDF.');
+    }
   }
 
   private async avisarError(error: unknown): Promise<void> {

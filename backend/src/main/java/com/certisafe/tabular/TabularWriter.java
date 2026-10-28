@@ -27,7 +27,11 @@ import java.util.List;
 public class TabularWriter {
 
     public byte[] write(List<String> headers, List<List<String>> rows, TabularFormat format) {
-        return format == TabularFormat.XLSX ? writeXlsx(headers, rows) : writeCsv(headers, rows);
+        return switch (format) {
+            case XLSX -> writeXlsx(headers, rows);
+            case PDF -> writePdf(headers, rows);
+            case CSV -> writeCsv(headers, rows);
+        };
     }
 
     private byte[] writeCsv(List<String> headers, List<List<String>> rows) {
@@ -77,5 +81,9 @@ public class TabularWriter {
         } catch (IOException e) {
             throw new IllegalStateException("No se pudo generar el Excel", e);
         }
+    }
+
+    private byte[] writePdf(List<String> headers, List<List<String>> rows) {
+        return PdfTabularReportWriter.write(headers, rows);
     }
 }

@@ -28,6 +28,10 @@ import { ExportFormat } from '@core/models/import.model';
     </button>
 
     <mat-menu #menu="matMenu">
+      <button mat-menu-item type="button" (click)="elegir('pdf')">
+        <mat-icon>picture_as_pdf</mat-icon>
+        <span>Informe PDF (.pdf)</span>
+      </button>
       <button mat-menu-item type="button" (click)="elegir('xlsx')">
         <mat-icon>table_view</mat-icon>
         <span>Excel (.xlsx)</span>

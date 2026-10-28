@@ -92,11 +92,17 @@ export type UserFormResult =
             <input
               matInput
               formControlName="phone"
+              minlength="10"
               maxlength="10"
               inputmode="numeric"
               autocomplete="tel"
               (input)="filtrarTelefono($event)"
             />
+            @if (
+              form.controls.phone.hasError('minlength') || form.controls.phone.hasError('pattern')
+            ) {
+              <mat-error>El teléfono debe tener 10 dígitos</mat-error>
+            }
           </mat-form-field>
 
           <mat-form-field appearance="outline">
@@ -188,7 +194,11 @@ export class UserFormDialog {
       Validators.required,
       Validators.maxLength(100),
     ]),
-    phone: this.fb.control(this.data.user?.phone ?? '', [Validators.maxLength(30)]),
+    phone: this.fb.control(this.data.user?.phone ?? '', [
+      Validators.minLength(10),
+      Validators.maxLength(10),
+      Validators.pattern(/^\d{10}$/),
+    ]),
     roleId: this.fb.control<number | null>(this.data.user?.role.id ?? null, [Validators.required]),
     active: this.fb.control(this.data.user?.active ?? true),
     password: this.fb.control(

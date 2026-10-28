@@ -17,3 +17,190 @@ table {
   font-size: 11px;
   color: var(--mat-sys-on-surface-variant);
 }
+
+.cs-acciones-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.cs-ingreso-card {
+  margin-bottom: 18px;
+  padding: 18px 20px;
+  border-width: 1.5px;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+
+  &.cs-ingreso-card--ok {
+    border-color: #2e7d32;
+    background: #f6fbf7;
+  }
+
+  &.cs-ingreso-card--pendiente {
+    border-color: #ef6c00;
+    background: #fffdf7;
+  }
+}
+
+.cs-ingreso-layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: stretch;
+  justify-content: space-between;
+}
+
+.cs-ingreso-info {
+  flex: 1 1 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cs-ingreso-badge {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+
+  mat-icon {
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+    flex: 0 0 auto;
+    margin-top: 2px;
+  }
+}
+
+.cs-ingreso-card--ok .cs-ingreso-badge mat-icon {
+  color: #2e7d32;
+}
+
+.cs-ingreso-card--pendiente .cs-ingreso-badge mat-icon {
+  color: #e65100;
+}
+
+.cs-ingreso-titulo {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.cs-ingreso-sub {
+  margin-top: 3px;
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.45;
+}
+
+.cs-requisitos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.cs-requisito-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+
+  &.cs-requisito-item--ok {
+    border-left: 4px solid #2e7d32;
+  }
+
+  &.cs-requisito-item--falta {
+    border-left: 4px solid #d32f2f;
+  }
+}
+
+.cs-requisito-icono {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.cs-requisito-item--ok .cs-requisito-icono {
+  color: #2e7d32;
+}
+
+.cs-requisito-item--falta .cs-requisito-icono {
+  color: #d32f2f;
+}
+
+.cs-requisito-detalle {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.cs-requisito-nombre {
+  font-weight: 600;
+  font-size: 13.5px;
+  color: #1e293b;
+}
+
+.cs-requisito-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.cs-requisito-vence {
+  font-size: 11.5px;
+  color: #64748b;
+}
+
+.cs-qr-panel {
+  flex: 0 0 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1.5px dashed #1565c0;
+  text-align: center;
+}
+
+.cs-qr-etiqueta {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #0d47a1;
+  margin-bottom: 8px;
+}
+
+.cs-qr-svg {
+  width: 136px;
+  height: 136px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+}
+
+.cs-qr-codigo {
+  margin-top: 8px;
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.cs-qr-operario {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.cs-qr-fecha {
+  margin-top: 2px;
+  font-size: 11px;
+  color: #2e7d32;
+  font-weight: 500;
+}

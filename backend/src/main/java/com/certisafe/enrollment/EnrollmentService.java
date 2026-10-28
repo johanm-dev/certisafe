@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -168,6 +169,7 @@ public class EnrollmentService {
         if (enrollmentRepository.existsByUserIdAndWorkshopId(target.getId(), workshop.getId())) {
             throw BusinessException.conflict("Ya estás inscrito en este taller");
         }
+        validateOperatorNoOverlap(target, workshop);
 
         long inscritos = enrollmentRepository.countByWorkshopId(workshop.getId());
         if (inscritos >= workshop.getMaxCapacity()) {
@@ -344,6 +346,38 @@ public class EnrollmentService {
     private static Specification<Enrollment> and(Specification<Enrollment> base,
                                                  Specification<Enrollment> extra) {
         return base == null ? extra : base.and(extra);
+    }
+
+    private void validateOperatorNoOverlap(User operator, Workshop targetWorkshop) {
+        if (targetWorkshop.getWorkshopDate() == null || targetWorkshop.getDurationMinutes() == null) {
+            return;
+        }
+        OffsetDateTime targetStart = targetWorkshop.getWorkshopDate();
+        OffsetDateTime targetEnd = targetStart.plusMinutes(targetWorkshop.getDurationMinutes());
+
+        List<Enrollment> activeEnrollments = enrollmentRepository.findAll((root, query, cb) -> cb.and(
+                cb.equal(root.get("user").get("id"), operator.getId()),
+                root.get("workshop").get("status").in(WorkshopStatus.PROGRAMADO, WorkshopStatus.EN_PROGRESO)
+        ));
+
+        for (Enrollment existing : activeEnrollments) {
+            Workshop other = existing.getWorkshop();
+            if (other == null || (other.getId() != null && other.getId().equals(targetWorkshop.getId()))) {
+                continue;
+            }
+            if (other.getWorkshopDate() == null || other.getDurationMinutes() == null) {
+                continue;
+            }
+            OffsetDateTime otherStart = other.getWorkshopDate();
+            OffsetDateTime otherEnd = otherStart.plusMinutes(other.getDurationMinutes());
+
+            if (targetStart.isBefore(otherEnd) && targetEnd.isAfter(otherStart)) {
+                throw BusinessException.conflict(
+                        "No se puede inscribir al taller porque existe un cruce de horarios con el taller '"
+                                + other.getName() + "' en el que ya está inscrito ("
+                                + otherStart + " a " + otherEnd + ")");
+            }
+        }
     }
 
     private Enrollment findOrFail(Long id) {

@@ -34,7 +34,8 @@ public record UserCreateRequest(
         @Size(max = 100, message = "El apellido no puede superar los 100 caracteres")
         String lastName,
 
-        @Size(max = 30, message = "El teléfono no puede superar los 30 caracteres")
+        @Size(min = 10, max = 30, message = "El teléfono debe tener al menos 10 dígitos")
+        @Pattern(regexp = "^[0-9]{10,30}$", message = "El teléfono debe contener al menos 10 dígitos numéricos")
         String phone,
 
         @NotNull(message = "El rol es obligatorio")

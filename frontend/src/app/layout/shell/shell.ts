@@ -9,6 +9,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
 import { NotificationService } from '@core/notification/notification.service';
+import { ConfirmDialog } from '@shared/confirm-dialog/confirm-dialog';
 import { firstValueFrom } from 'rxjs';
 
 /** Armazon de la aplicacion: cabecera, menu lateral y area de contenido. */
@@ -76,11 +77,27 @@ export class Shell {
     const cambiada = await firstValueFrom(ref.afterClosed());
     if (cambiada) {
       this.notifications.success('Contraseña actualizada. Inicia sesión con la nueva.');
-      this.logout();
+      this.auth.logout();
     }
   }
 
-  logout(): void {
-    this.auth.logout();
+  /**
+   * Pide confirmacion antes de cerrar la sesion para todos los roles (ADMIN, INSTRUCTOR, OPERATOR),
+   * evitando cierres accidentales desde la barra superior.
+   */
+  async logout(): Promise<void> {
+    const ref = this.dialog.open(ConfirmDialog, {
+      width: '420px',
+      data: {
+        title: 'Cerrar sesión',
+        message: '¿Estás seguro de que deseas cerrar tu sesión actual en CertiSafe?',
+        confirmLabel: 'Cerrar sesión',
+        destructive: true,
+      },
+    });
+    const confirmado = await firstValueFrom(ref.afterClosed());
+    if (confirmado) {
+      this.auth.logout();
+    }
   }
 }
