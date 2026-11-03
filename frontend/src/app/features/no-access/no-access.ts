@@ -15,7 +15,7 @@ import { AuthService } from '@core/auth/auth.service';
       <p>
         Tu rol <strong>{{ auth.user()?.role }}</strong> no tiene permiso para ver esta sección.
       </p>
-      <a mat-flat-button routerLink="/talleres">
+      <a mat-flat-button routerLink="/talleres" [replaceUrl]="true">
         <mat-icon>arrow_back</mat-icon>
         Volver a talleres
       </a>

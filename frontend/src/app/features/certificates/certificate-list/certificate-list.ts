@@ -386,6 +386,14 @@ export class CertificateList {
 
   // --- Revocación ---
 
+  verMotivo(certificado: Certificate): void {
+    this.dialog.open(RevokeDialog, {
+      width: '520px',
+      maxWidth: '95vw',
+      data: { certificate: certificado, readOnly: true } satisfies RevokeDialogData,
+    });
+  }
+
   revocar(certificado: Certificate): void {
     this.dialog
       .open(RevokeDialog, {
@@ -424,6 +432,17 @@ export class CertificateList {
 
   tonoDe(certificado: Certificate): string {
     return CERTIFICATE_TONE[certificado.status];
+  }
+
+  inicialesDe(nombreCompleto: string): string {
+    const partes = (nombreCompleto ?? '').trim().split(/\s+/).filter(Boolean);
+    if (partes.length === 0) {
+      return 'OP';
+    }
+    if (partes.length === 1) {
+      return partes[0].slice(0, 2).toUpperCase();
+    }
+    return `${partes[0][0]}${partes[1][0]}`.toUpperCase();
   }
 
   /** Cuánto falta para el vencimiento, solo mientras siga vigente. */

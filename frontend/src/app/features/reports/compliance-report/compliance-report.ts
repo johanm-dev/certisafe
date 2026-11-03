@@ -84,8 +84,8 @@ export class ComplianceReport {
   private readonly tallerId = toSignal(this.workshopControl.valueChanges, {
     initialValue: '' as number | '',
   });
-  private readonly desde = toSignal(this.fromControl.valueChanges, { initialValue: null });
-  private readonly hasta = toSignal(this.toControl.valueChanges, { initialValue: null });
+  readonly desde = toSignal(this.fromControl.valueChanges, { initialValue: null });
+  readonly hasta = toSignal(this.toControl.valueChanges, { initialValue: null });
 
   // --- Paginación y orden (servidor) ---
   readonly pageIndex = signal(0);
@@ -145,8 +145,20 @@ export class ComplianceReport {
     this.workshopControl.valueChanges
       .pipe(takeUntilDestroyed())
       .subscribe(() => this.pageIndex.set(0));
-    this.fromControl.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => this.pageIndex.set(0));
-    this.toControl.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => this.pageIndex.set(0));
+    this.fromControl.valueChanges.pipe(takeUntilDestroyed()).subscribe((fechaDesde) => {
+      const fechaHasta = this.toControl.value;
+      if (fechaDesde && fechaHasta && fechaHasta.getTime() < fechaDesde.getTime()) {
+        this.toControl.setValue(null);
+      }
+      this.pageIndex.set(0);
+    });
+    this.toControl.valueChanges.pipe(takeUntilDestroyed()).subscribe((fechaHasta) => {
+      const fechaDesde = this.fromControl.value;
+      if (fechaDesde && fechaHasta && fechaHasta.getTime() < fechaDesde.getTime()) {
+        this.toControl.setValue(fechaDesde, { emitEvent: false });
+      }
+      this.pageIndex.set(0);
+    });
 
     this.workshopApi.list({ page: 0, size: 100, sort: 'workshopDate,desc' }).subscribe({
       next: (pagina) => this.talleres.set(pagina.content),
@@ -225,6 +237,17 @@ export class ComplianceReport {
 
   tonoDe(fila: ComplianceRow): string {
     return COMPLIANCE_TONE[fila.status];
+  }
+
+  inicialesDe(nombreCompleto: string): string {
+    const partes = (nombreCompleto ?? '').trim().split(/\s+/).filter(Boolean);
+    if (partes.length === 0) {
+      return 'OP';
+    }
+    if (partes.length === 1) {
+      return partes[0].slice(0, 2).toUpperCase();
+    }
+    return `${partes[0][0]}${partes[1][0]}`.toUpperCase();
   }
 
   /** Explicación del resaltado, para el tooltip de la columna "Apto". */

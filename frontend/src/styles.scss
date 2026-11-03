@@ -91,16 +91,40 @@ body {
 }
 
 .cs-filtros {
-  padding: 16px 16px 0;
-  margin-bottom: 16px;
+  padding: 18px 20px;
+  margin-bottom: 18px;
 }
 
-.cs-filtros .cs-row {
-  gap: 12px;
+.cs-filtros .cs-row,
+.cs-filtros-grid {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
 }
 
-.cs-buscador {
-  width: 280px;
+.cs-buscador,
+.cs-filtro-buscador {
+  flex: 1.3 1 240px;
+  min-width: 220px;
+}
+
+.cs-field-md,
+.cs-filtro-taller {
+  flex: 1 1 220px;
+  min-width: 200px;
+}
+
+.cs-field-sm,
+.cs-filtro-asistencia {
+  flex: 0.7 1 170px;
+  min-width: 160px;
+}
+
+.cs-btn-limpiar {
+  height: 44px;
+  padding: 0 18px;
+  flex: 0 0 auto;
 }
 
 .cs-tabla-card {
@@ -117,6 +141,7 @@ table {
 
 .cs-nombre {
   font-weight: 500;
+  color: #334155;
 }
 
 .cs-descripcion {
@@ -125,7 +150,7 @@ table {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 12px;
-  color: var(--mat-sys-on-surface-variant);
+  color: #64748b;
 }
 
 .cs-num {
@@ -137,13 +162,145 @@ table {
 // certificados y la de inscripciones, por eso vive aquí y no en un componente.
 .cs-cert-num {
   font-family: 'Roboto Mono', 'Consolas', monospace;
-  font-weight: 600;
-  letter-spacing: 0.4px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.cs-cert-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: #f4f7fb;
+  border: 1px solid #d8e2ef;
+  color: #334e68;
+  font-size: 12.5px;
+  width: fit-content;
+}
+
+.cs-cert-icono {
+  font-size: 15px;
+  width: 15px;
+  height: 15px;
+  color: #5b7a9c;
+}
+
+// Celdas enriquecidas compartidas por todos los listados (avatares, fechas en dos líneas y metadatos)
+.cs-col-operario {
+  min-width: 230px;
+}
+
+.cs-operario-celda {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cs-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #e9eff6;
+  color: #3b556e;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 36px;
+  border: 1px solid #cbd7e6;
+}
+
+.cs-avatar--sm {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  font-size: 11px;
+}
+
+.cs-operario-textos,
+.cs-taller-celda {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cs-correo {
+  font-size: 12px;
+  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 230px;
+}
+
+.cs-col-taller {
+  min-width: 250px;
+}
+
+.cs-taller-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.cs-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.cs-meta-lugar {
+  max-width: 210px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cs-meta-icon {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+  color: #94a3b8;
+}
+
+.cs-meta-sep {
+  color: #cbd5e1;
+}
+
+.cs-col-fecha {
+  min-width: 125px;
+  white-space: nowrap;
+}
+
+.cs-fecha-principal {
+  font-size: 13px;
+  font-weight: 400;
+  color: #334155;
+}
+
+.cs-fecha-hora {
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: #64748b;
 }
 
 .cs-acciones-col {
   width: 56px;
   text-align: center;
+}
+
+.cs-btn-eliminar {
+  color: #64748b;
+}
+
+.cs-btn-eliminar:hover {
+  color: #b83b46;
+  background: #fdf3f3;
 }
 
 .cs-sin-dato {
@@ -181,50 +338,81 @@ table {
 // El selector se repite para ganarle en especificidad al estilo propio de Material,
 // que es el que se aplica cuando ambas reglas pesan igual.
 .mat-mdc-header-row {
-  background: var(--mat-sys-surface-container-low);
+  background: #f8fafc;
 }
 
 .mat-mdc-table .mat-mdc-header-cell {
-  font-weight: 600;
+  padding: 14px 20px;
+  font-size: 11.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.mat-mdc-table .mat-mdc-cell {
+  padding: 14px 20px;
+  vertical-align: middle;
+  border-bottom: 1px solid #eef2f6;
+}
+
+.mat-mdc-table .mat-mdc-row:hover {
+  background-color: #f8fafc;
 }
 
 // ---------------------------------------------------------------------------
-// Etiqueta de estado del taller
+// Etiqueta de estado (talleres, certificados, usuarios y reportes)
 // ---------------------------------------------------------------------------
 
 .cs-chip {
-  display: inline-block;
-  padding: 3px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 13px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 500;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.15px;
   white-space: nowrap;
+  border: 1px solid transparent;
+  width: fit-content;
 }
 
 .cs-chip--info {
-  background: #e3f2fd;
-  color: #0d47a1;
+  background: #f2f6fb;
+  color: #335c81;
+  border-color: #c5d7ed;
 }
 
 .cs-chip--warn {
-  background: #fff8e1;
-  color: #8a6d00;
+  background: #fdf9ef;
+  color: #7c5e10;
+  border-color: #e9d8a6;
+}
+
+.cs-chip--orange {
+  background: #fdf4ed;
+  color: #8c4a27;
+  border-color: #edc4a8;
 }
 
 .cs-chip--ok {
-  background: #e8f5e9;
-  color: #1b5e20;
+  background: #f2f9f5;
+  color: #2d6a4f;
+  border-color: #b7e4c7;
 }
 
 .cs-chip--muted {
-  background: #eceff1;
-  color: #546e7a;
+  background: #f3f5f8;
+  color: #52606d;
+  border-color: #d5dce3;
 }
 
 .cs-chip--error {
-  background: #ffebee;
-  color: #b3261e;
+  background: #fdf3f3;
+  color: #8c2f39;
+  border-color: #e8b4b8;
 }
 
 // ---------------------------------------------------------------------------

@@ -45,10 +45,6 @@ import { EnrollDialog, EnrollDialogData } from '../enroll-dialog/enroll-dialog';
  * un OPERATOR solo recibe las suyas, un INSTRUCTOR solo las de los talleres que tiene
  * asignados y un ADMIN todas. Lo que cambia en la interfaz es la presentación y qué acciones
  * se ofrecen, no el conjunto de datos.
- *
- * La columna de asistencia es un selector y no una casilla de verificación: el estado tiene
- * tres valores (pendiente, asistió, ausente), y una casilla solo expresa dos. Se deshabilita
- * cuando el taller aún no ha empezado, que es exactamente el criterio 3 de RF-012.
  */
 @Component({
   selector: 'cs-enrollment-list',
@@ -97,7 +93,7 @@ export class EnrollmentList {
   /** RF-012: la asistencia la marca el instructor asignado al taller o un ADMIN. */
   readonly puedeMarcarAsistencia = computed(() => this.esAdmin() || this.esInstructor());
 
-  /** Eliminar una inscripción es una corrección administrativa: se deja en manos del ADMIN. */
+  /** Cancelar una inscripción es una corrección administrativa: se deja en manos del ADMIN. */
   readonly puedeBorrar = computed(() => this.esAdmin());
   readonly puedeExportar = computed(() => this.auth.can('export.execute'));
 
@@ -270,18 +266,17 @@ export class EnrollmentList {
       return '';
     }
     if (inscripcion.workshopStatus === 'PROGRAMADO') {
-      return 'Podrá registrarla cuando el taller esté en progreso o finalizado';
+      return 'Se habilita al iniciar el taller';
     }
-    return 'El taller está cancelado';
+    return 'Taller cancelado / archivado';
   }
 
   marcarAsistencia(inscripcion: Enrollment, estado: AttendanceStatus): void {
+    if (inscripcion.attendanceStatus === estado) {
+      return;
+    }
     this.api.registerAttendance(inscripcion.id, estado).subscribe({
       next: (actualizada) => {
-        // La respuesta trae el número del certificado de esa inscripción (RF-013). Se dice
-        // cuál es porque es el efecto que el usuario no ve en la fila hasta que la tabla se
-        // recarga. No se afirma que se acabe de emitir: si ya existía, el backend no lo
-        // duplica y el número es el mismo.
         const sufijo = actualizada.certificateNumber
           ? ` Certificado: ${actualizada.certificateNumber}.`
           : '';
@@ -293,8 +288,6 @@ export class EnrollmentList {
       },
       error: (error: unknown) => {
         this.notifications.error(describeHttpError(error));
-        // El selector ya muestra el valor nuevo aunque el servidor lo haya rechazado; se
-        // recarga para devolverlo a lo que de verdad hay guardado.
         this.recargar();
       },
     });
@@ -334,12 +327,12 @@ export class EnrollmentList {
       .open(ConfirmDialog, {
         width: '470px',
         data: {
-          title: 'Eliminar inscripción',
+          title: 'Cancelar inscripción',
           message:
-            `Se eliminará la inscripción de ${inscripcion.userFullName} en ` +
+            `Se cancelará la inscripción de ${inscripcion.userFullName} en ` +
             `"${inscripcion.workshopName}". Si ya tiene un certificado emitido no se podrá ` +
-            'borrar: se conserva por trazabilidad.',
-          confirmLabel: 'Eliminar',
+            'cancelar: se conserva por trazabilidad.',
+          confirmLabel: 'Cancelar inscripción',
           destructive: true,
         },
       })
@@ -350,7 +343,7 @@ export class EnrollmentList {
         }
         this.api.remove(inscripcion.id).subscribe({
           next: () => {
-            this.notifications.success('Inscripción eliminada.');
+            this.notifications.success('Inscripción cancelada.');
             this.recargar();
           },
           error: (error: unknown) => this.notifications.error(describeHttpError(error)),
@@ -365,6 +358,22 @@ export class EnrollmentList {
   }
 
   tonoDe(inscripcion: Enrollment): string {
+    if (
+      inscripcion.attendanceStatus === 'ASISTIO' &&
+      inscripcion.workshopStatus === 'CANCELADO'
+    ) {
+      return 'orange';
+    }
     return ATTENDANCE_TONE[inscripcion.attendanceStatus];
+  }
+
+  inicialesDe(nombreCompleto: string): string {
+    if (!nombreCompleto) {
+      return 'OP';
+    }
+    const partes = nombreCompleto.trim().split(/\s+/);
+    const primera = partes[0]?.[0] ?? '';
+    const segunda = partes.length > 1 ? (partes[1]?.[0] ?? '') : '';
+    return (primera + segunda).toUpperCase() || 'OP';
   }
 }

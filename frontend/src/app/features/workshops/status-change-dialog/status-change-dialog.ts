@@ -17,13 +17,14 @@ import {
 
 export interface StatusChangeDialogData {
   workshop: Workshop;
+  archiveMode?: boolean;
 }
 
 /** Porcentaje minimo de aforo requerido para poder iniciar un taller (60%). */
 const AFORO_MINIMO_INICIO = 0.6;
 
 /**
- * Cambio de estado (RNF-016).
+ * Cambio de estado (RNF-016) y archivado logico de talleres.
  *
  * Lo importante: las opciones NO estan escritas aqui. Se pintan a partir de
  * `allowedTransitions`, que el backend calcula con la misma regla que luego aplica al
@@ -42,7 +43,7 @@ const AFORO_MINIMO_INICIO = 0.6;
     MatButtonModule,
   ],
   template: `
-    <h2 mat-dialog-title>Cambiar estado</h2>
+    <h2 mat-dialog-title>{{ esModoArchivar ? 'Archivar taller' : 'Cambiar estado' }}</h2>
 
     <mat-dialog-content>
       <p class="cs-contexto">
@@ -51,13 +52,24 @@ const AFORO_MINIMO_INICIO = 0.6;
         <span class="cs-chip" [class]="'cs-chip cs-chip--' + tono(data.workshop.status)">
           {{ etiqueta(data.workshop.status) }}
         </span>
-        <br />
-        Aforo inscrito:
-        <strong>{{ data.workshop.enrolledCount }} / {{ data.workshop.maxCapacity }}</strong>
-        ({{ porcentajeAforo }}%)
+        @if (!esModoArchivar) {
+          <br />
+          Aforo inscrito:
+          <strong>{{ data.workshop.enrolledCount }} / {{ data.workshop.maxCapacity }}</strong>
+          ({{ porcentajeAforo }}%)
+        }
       </p>
 
-      @if (data.workshop.status === 'PROGRAMADO' && !cumpleAforoParaIniciar) {
+      @if (esModoArchivar) {
+        <div class="cs-alerta-archivo">
+          <mat-icon>inventory_2</mat-icon>
+          <span>
+            El taller <strong>no se borrará</strong> de la base de datos: quedará archivado (en
+            estado <strong>Cancelado</strong>) y se ocultará del listado de talleres activos para
+            conservar su trazabilidad e historial.
+          </span>
+        </div>
+      } @else if (data.workshop.status === 'PROGRAMADO' && !cumpleAforoParaIniciar) {
         <div class="cs-alerta-aforo">
           <mat-icon>warning</mat-icon>
           <span>
@@ -71,26 +83,51 @@ const AFORO_MINIMO_INICIO = 0.6;
       }
 
       <form [formGroup]="form">
-        <mat-radio-group formControlName="status" class="cs-opciones">
-          @for (opcion of data.workshop.allowedTransitions; track opcion) {
-            <mat-radio-button
-              [value]="opcion"
-              [disabled]="opcion === 'EN_PROGRESO' && !cumpleAforoParaIniciar"
-            >
-              {{ etiqueta(opcion) }}
-              @if (opcion === 'EN_PROGRESO' && !cumpleAforoParaIniciar) {
-                <span class="cs-bloqueado-nota">(Requiere mínimo 60% de aforo)</span>
-              }
-            </mat-radio-button>
-          }
-        </mat-radio-group>
+        @if (!esModoArchivar) {
+          <mat-radio-group formControlName="status" class="cs-opciones">
+            @for (opcion of data.workshop.allowedTransitions; track opcion) {
+              <mat-radio-button
+                [value]="opcion"
+                [disabled]="opcion === 'EN_PROGRESO' && !cumpleAforoParaIniciar"
+              >
+                {{ etiqueta(opcion) }}
+                @if (opcion === 'EN_PROGRESO' && !cumpleAforoParaIniciar) {
+                  <span class="cs-bloqueado-nota">(Requiere mínimo 60% de aforo)</span>
+                }
+              </mat-radio-button>
+            }
+          </mat-radio-group>
+        }
 
-        @if (form.controls.status.value === 'CANCELADO') {
+        @if (esModoArchivar || form.controls.status.value === 'CANCELADO') {
           <mat-form-field appearance="outline" class="cs-full">
-            <mat-label>Motivo de la cancelación</mat-label>
-            <textarea matInput formControlName="reason" rows="3" maxlength="500"></textarea>
-            @if (form.controls.reason.hasError('required')) {
-              <mat-error>Cancelar un taller exige un motivo</mat-error>
+            <mat-label>
+              {{
+                esModoArchivar
+                  ? 'Motivo por el cual se archiva el taller'
+                  : 'Motivo de la cancelación'
+              }}
+            </mat-label>
+            <textarea
+              matInput
+              formControlName="reason"
+              rows="3"
+              maxlength="450"
+              [placeholder]="
+                esModoArchivar
+                  ? 'Indica obligatoriamente la razón para archivar este taller'
+                  : 'Indica obligatoriamente el motivo de la cancelación'
+              "
+            ></textarea>
+            <mat-hint align="end">{{ form.controls.reason.value.length }} / 450</mat-hint>
+            @if (form.controls.reason.touched && form.controls.reason.invalid) {
+              <mat-error>
+                {{
+                  esModoArchivar
+                    ? 'Archivar un taller exige indicar un motivo'
+                    : 'Cancelar un taller exige un motivo'
+                }}
+              </mat-error>
             }
           </mat-form-field>
         }
@@ -102,10 +139,10 @@ const AFORO_MINIMO_INICIO = 0.6;
       <button
         mat-flat-button
         type="button"
-        [disabled]="form.controls.status.value === 'EN_PROGRESO' && !cumpleAforoParaIniciar"
+        [disabled]="!esModoArchivar && form.controls.status.value === 'EN_PROGRESO' && !cumpleAforoParaIniciar"
         (click)="submit()"
       >
-        Confirmar
+        {{ esModoArchivar ? 'Archivar taller' : 'Confirmar' }}
       </button>
     </mat-dialog-actions>
   `,
@@ -115,20 +152,31 @@ const AFORO_MINIMO_INICIO = 0.6;
       line-height: 1.6;
       color: var(--mat-sys-on-surface-variant);
     }
-    .cs-alerta-aforo {
+    .cs-alerta-aforo,
+    .cs-alerta-archivo {
       display: flex;
       align-items: flex-start;
       gap: 10px;
       padding: 10px 12px;
       margin-bottom: 14px;
       border-radius: 8px;
-      background: #fff8e1;
-      color: #6d4c00;
       font-size: 13px;
       line-height: 1.45;
     }
+    .cs-alerta-aforo {
+      background: #fff8e1;
+      color: #6d4c00;
+    }
     .cs-alerta-aforo mat-icon {
       color: #ef6c00;
+      flex: 0 0 auto;
+    }
+    .cs-alerta-archivo {
+      background: var(--mat-sys-surface-container-high);
+      color: var(--mat-sys-on-surface);
+    }
+    .cs-alerta-archivo mat-icon {
+      color: var(--mat-sys-primary);
       flex: 0 0 auto;
     }
     .cs-bloqueado-nota {
@@ -154,6 +202,8 @@ export class StatusChangeDialog {
   readonly data = inject<StatusChangeDialogData>(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder).nonNullable;
 
+  readonly esModoArchivar = Boolean(this.data.archiveMode);
+
   /** Minimo de inscritos requeridos (60% del aforo maximo, redondeado hacia arriba). */
   readonly minimoInscritosParaIniciar = Math.ceil(
     this.data.workshop.maxCapacity * AFORO_MINIMO_INICIO,
@@ -167,6 +217,9 @@ export class StatusChangeDialog {
     this.data.workshop.enrolledCount >= this.minimoInscritosParaIniciar;
 
   private readonly estadoInicialPorDefecto: WorkshopStatus = (() => {
+    if (this.esModoArchivar) {
+      return 'CANCELADO';
+    }
     const primera = this.data.workshop.allowedTransitions[0];
     if (primera === 'EN_PROGRESO' && !this.cumpleAforoParaIniciar) {
       return (
@@ -178,11 +231,11 @@ export class StatusChangeDialog {
 
   readonly form = this.fb.group({
     status: this.fb.control<WorkshopStatus>(this.estadoInicialPorDefecto, [Validators.required]),
-    reason: this.fb.control(''),
+    reason: this.fb.control('', [Validators.maxLength(450)]),
   });
 
   constructor() {
-    // El motivo solo es obligatorio al cancelar. El backend lo exige igual; esto adelanta
+    // El motivo es obligatorio al cancelar o archivar. El backend lo exige igual; esto adelanta
     // el aviso en lugar de dejar que rebote con un 400.
     this.aplicarReglaDeMotivo(this.form.controls.status.value);
 
@@ -201,7 +254,14 @@ export class StatusChangeDialog {
 
   submit(): void {
     const valor = this.form.getRawValue();
-    if (valor.status === 'EN_PROGRESO' && !this.cumpleAforoParaIniciar) {
+    if (!this.esModoArchivar && valor.status === 'EN_PROGRESO' && !cumpleAforo(this.cumpleAforoParaIniciar)) {
+      return;
+    }
+
+    const motivoRecortado = valor.reason.trim();
+    if ((this.esModoArchivar || valor.status === 'CANCELADO') && !motivoRecortado) {
+      this.form.controls.reason.setErrors({ required: true });
+      this.form.controls.reason.markAsTouched();
       return;
     }
 
@@ -210,20 +270,30 @@ export class StatusChangeDialog {
       return;
     }
 
+    const textoMotivoFinal = this.esModoArchivar
+      ? motivoRecortado.startsWith('Taller archivado:')
+        ? motivoRecortado
+        : `Taller archivado: ${motivoRecortado}`
+      : motivoRecortado || null;
+
     const peticion: StatusChangeRequest = {
-      status: valor.status,
-      reason: valor.reason.trim() || null,
+      status: this.esModoArchivar ? 'CANCELADO' : valor.status,
+      reason: textoMotivoFinal,
     };
     this.ref.close(peticion);
   }
 
   private aplicarReglaDeMotivo(status: WorkshopStatus): void {
     const motivo = this.form.controls.reason;
-    if (status === 'CANCELADO') {
-      motivo.addValidators(Validators.required);
+    if (this.esModoArchivar || status === 'CANCELADO') {
+      motivo.setValidators([Validators.required, Validators.maxLength(450)]);
     } else {
-      motivo.removeValidators(Validators.required);
+      motivo.setValidators([Validators.maxLength(450)]);
     }
-    motivo.updateValueAndValidity();
+    motivo.updateValueAndValidity({ emitEvent: false });
   }
+}
+
+function cumpleAforo(cumple: boolean): boolean {
+  return cumple;
 }

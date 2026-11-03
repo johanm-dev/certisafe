@@ -47,7 +47,13 @@ export interface HistoryDialogData {
                 <span class="cs-fecha">{{ entrada.changedAt | date: 'medium' }}</span>
               </div>
               <div class="cs-detalle">
-                {{ entrada.previousStatus ? 'Desde ' + etiqueta(entrada.previousStatus) : 'Creación del taller' }}
+                {{
+                  !entrada.previousStatus
+                    ? 'Creación del taller'
+                    : entrada.previousStatus === entrada.newStatus
+                      ? 'Actualización en ' + etiqueta(entrada.newStatus)
+                      : 'Desde ' + etiqueta(entrada.previousStatus)
+                }}
                 · {{ entrada.changedBy.fullName }}
               </div>
               @if (entrada.reason) {

@@ -55,18 +55,19 @@ public class WorkshopController {
     @GetMapping
     @PreAuthorize("hasAuthority('workshops.read')")
     @Operation(summary = "Listar talleres (paginado)",
-            description = "Filtros opcionales: search, status, instructorId, from, to (ISO-8601 con offset). "
+            description = "Filtros opcionales: search, status, excludeCancelled, instructorId, from, to (ISO-8601 con offset). "
                     + "Un INSTRUCTOR solo ve los talleres que tiene asignados.")
     public PageResponse<WorkshopResponse> list(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) WorkshopStatus status,
+            @RequestParam(required = false) Boolean excludeCancelled,
             @RequestParam(required = false) Long instructorId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime to,
             @PageableDefault(size = 20, sort = "workshopDate", direction = Sort.Direction.DESC) Pageable pageable,
             @AuthenticationPrincipal UserPrincipal actor) {
 
-        return workshopService.list(search, status, instructorId, from, to, pageable, actor);
+        return workshopService.list(search, status, excludeCancelled, instructorId, from, to, pageable, actor);
     }
 
     @GetMapping("/{id}")
@@ -113,19 +114,22 @@ public class WorkshopController {
 
     @PutMapping("/{id}/instructor")
     @PreAuthorize("hasAuthority('workshops.assign_instructor')")
-    @Operation(summary = "Asignar instructor", description = "Guarda el histórico de asignaciones.")
+    @Operation(summary = "Asignar o reasignar instructor",
+            description = "Guarda el histórico de asignaciones. Si ya tenía instructor, exige la razón del cambio.")
     public WorkshopResponse assignInstructor(@PathVariable Long id,
                                              @Valid @RequestBody AssignInstructorRequest request,
                                              @AuthenticationPrincipal UserPrincipal actor) {
-        return workshopService.assignInstructor(id, request.instructorId(), actor.getId());
+        return workshopService.assignInstructor(id, request.instructorId(), request.reason(), actor.getId());
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasAuthority('workshops.delete')")
-    @Operation(summary = "Borrar taller",
-            description = "Solo si está PROGRAMADO y no tiene inscripciones. Para anular uno en curso, use CANCELADO.")
-    public void delete(@PathVariable Long id) {
-        workshopService.delete(id);
+    @Operation(summary = "Archivar taller (eliminación lógica)",
+            description = "Reemplaza el borrado físico por el archivado lógico en estado CANCELADO conservando el historial.")
+    public void delete(@PathVariable Long id,
+                       @RequestParam(required = false) String reason,
+                       @AuthenticationPrincipal UserPrincipal actor) {
+        workshopService.delete(id, reason, actor);
     }
 }

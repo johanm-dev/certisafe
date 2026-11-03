@@ -77,6 +77,7 @@ export interface StatusChangeRequest {
 
 export interface AssignInstructorRequest {
   instructorId: number;
+  reason?: string | null;
 }
 
 export interface StatusHistory {
@@ -96,6 +97,7 @@ export interface WorkshopQuery {
   sort?: string;
   search?: string;
   status?: WorkshopStatus;
+  excludeCancelled?: boolean;
   instructorId?: number;
   from?: string;
   to?: string;

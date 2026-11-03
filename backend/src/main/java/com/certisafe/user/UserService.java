@@ -1,5 +1,6 @@
 package com.certisafe.user;
 
+import com.certisafe.auth.mail.MailSender;
 import com.certisafe.common.PageResponse;
 import com.certisafe.common.error.BusinessException;
 import com.certisafe.common.error.NotFoundException;
@@ -10,6 +11,9 @@ import com.certisafe.repository.UserRepository;
 import com.certisafe.user.dto.UserCreateRequest;
 import com.certisafe.user.dto.UserResponse;
 import com.certisafe.user.dto.UserUpdateRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -25,16 +29,28 @@ import java.util.Locale;
 @Transactional(readOnly = true)
 public class UserService {
 
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
+
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final MailSender mailSender;
 
     public UserService(UserRepository userRepository,
                        RoleRepository roleRepository,
                        PasswordEncoder passwordEncoder) {
+        this(userRepository, roleRepository, passwordEncoder, null);
+    }
+
+    @Autowired
+    public UserService(UserRepository userRepository,
+                       RoleRepository roleRepository,
+                       PasswordEncoder passwordEncoder,
+                       MailSender mailSender) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.mailSender = mailSender;
     }
 
     /**
@@ -98,7 +114,23 @@ public class UserService {
         user.setRole(role);
         user.setActive(request.active() == null || request.active());
 
-        return UserResponse.from(userRepository.save(user));
+        User saved = userRepository.save(user);
+
+        if (mailSender != null) {
+            try {
+                mailSender.sendWelcomeCredentials(
+                        saved.getEmail(),
+                        saved.fullName(),
+                        role.getName(),
+                        request.password()
+                );
+            } catch (Exception ex) {
+                log.warn("El usuario {} fue creado, pero no se pudo enviar el correo de bienvenida: {}",
+                        saved.getEmail(), ex.getMessage());
+            }
+        }
+
+        return UserResponse.from(saved);
     }
 
     @Transactional

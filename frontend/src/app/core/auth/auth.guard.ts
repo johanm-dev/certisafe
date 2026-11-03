@@ -14,6 +14,13 @@ export const authGuard: CanActivateFn = () => {
   return auth.isAuthenticated() ? true : router.createUrlTree(['/login']);
 };
 
+/** Impide volver a pantallas publicas de acceso cuando ya hay una sesion activa. */
+export const guestGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  return auth.isAuthenticated() ? router.createUrlTree(['/talleres']) : true;
+};
+
 /** Exige haber iniciado sesion Y tener el permiso granular indicado. */
 export function permissionGuard(permission: string): CanActivateFn {
   return () => {

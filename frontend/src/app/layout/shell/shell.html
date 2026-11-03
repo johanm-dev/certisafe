@@ -39,42 +39,42 @@
   <mat-sidenav mode="side" opened class="cs-sidenav" aria-label="Menú principal">
     <mat-nav-list>
       @if (puedeVerTalleres()) {
-        <a mat-list-item routerLink="/talleres" routerLinkActive="cs-item-active">
+        <a mat-list-item routerLink="/talleres" [replaceUrl]="true" routerLinkActive="cs-item-active">
           <mat-icon matListItemIcon>event</mat-icon>
           <span matListItemTitle>Talleres</span>
         </a>
       }
 
       @if (puedeVerInscripciones()) {
-        <a mat-list-item routerLink="/inscripciones" routerLinkActive="cs-item-active">
+        <a mat-list-item routerLink="/inscripciones" [replaceUrl]="true" routerLinkActive="cs-item-active">
           <mat-icon matListItemIcon>how_to_reg</mat-icon>
           <span matListItemTitle>{{ etiquetaInscripciones() }}</span>
         </a>
       }
 
       @if (puedeVerCertificados()) {
-        <a mat-list-item routerLink="/certificados" routerLinkActive="cs-item-active">
+        <a mat-list-item routerLink="/certificados" [replaceUrl]="true" routerLinkActive="cs-item-active">
           <mat-icon matListItemIcon>workspace_premium</mat-icon>
           <span matListItemTitle>{{ etiquetaCertificados() }}</span>
         </a>
       }
 
       @if (puedeVerUsuarios()) {
-        <a mat-list-item routerLink="/usuarios" routerLinkActive="cs-item-active">
+        <a mat-list-item routerLink="/usuarios" [replaceUrl]="true" routerLinkActive="cs-item-active">
           <mat-icon matListItemIcon>manage_accounts</mat-icon>
           <span matListItemTitle>Usuarios</span>
         </a>
       }
 
       @if (puedeVerReportes()) {
-        <a mat-list-item routerLink="/reportes" routerLinkActive="cs-item-active">
+        <a mat-list-item routerLink="/reportes" [replaceUrl]="true" routerLinkActive="cs-item-active">
           <mat-icon matListItemIcon>assessment</mat-icon>
           <span matListItemTitle>Reporte de cumplimiento</span>
         </a>
       }
 
       @if (puedeImportar()) {
-        <a mat-list-item routerLink="/importacion" routerLinkActive="cs-item-active">
+        <a mat-list-item routerLink="/importacion" [replaceUrl]="true" routerLinkActive="cs-item-active">
           <mat-icon matListItemIcon>upload_file</mat-icon>
           <span matListItemTitle>Importación</span>
         </a>

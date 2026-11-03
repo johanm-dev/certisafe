@@ -17,25 +17,37 @@
   </div>
 
   @if (!esOperador()) {
-    <mat-card appearance="outlined" class="cs-filtros">
-      <div class="cs-row">
-        <mat-form-field appearance="outline" class="cs-buscador">
+    <mat-card appearance="outlined" class="cs-filtros cs-filtros-inscripciones">
+      <div class="cs-filtros-grid">
+        <mat-form-field
+          appearance="outline"
+          subscriptSizing="dynamic"
+          class="cs-filtro-buscador"
+        >
           <mat-label>Buscar</mat-label>
-          <input matInput [formControl]="searchControl" placeholder="Operario o taller" />
+          <input matInput [formControl]="searchControl" placeholder="Nombre, correo o taller" />
           <mat-icon matPrefix>search</mat-icon>
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="cs-field-md">
+        <mat-form-field
+          appearance="outline"
+          subscriptSizing="dynamic"
+          class="cs-filtro-taller"
+        >
           <mat-label>Taller</mat-label>
           <mat-select [formControl]="workshopControl">
-            <mat-option value="">Todos</mat-option>
+            <mat-option value="">Todos los talleres</mat-option>
             @for (taller of talleres(); track taller.id) {
               <mat-option [value]="taller.id">{{ taller.name }}</mat-option>
             }
           </mat-select>
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="cs-field-sm">
+        <mat-form-field
+          appearance="outline"
+          subscriptSizing="dynamic"
+          class="cs-filtro-asistencia"
+        >
           <mat-label>Asistencia</mat-label>
           <mat-select [formControl]="attendanceControl">
             <mat-option value="">Todas</mat-option>
@@ -48,6 +60,7 @@
         <button
           mat-stroked-button
           type="button"
+          class="cs-btn-limpiar"
           (click)="limpiarFiltros()"
           matTooltip="Quitar todos los filtros"
         >
@@ -66,6 +79,7 @@
     <div class="cs-tabla-scroll">
       <table
         mat-table
+        class="cs-tabla-inscripciones"
         [dataSource]="rows()"
         matSort
         [matSortActive]="sortField()"
@@ -73,61 +87,108 @@
         (matSortChange)="onSortChange($event)"
       >
         <ng-container matColumnDef="user">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>Operario</th>
-          <td mat-cell *matCellDef="let inscripcion">
-            <div class="cs-nombre">{{ inscripcion.userFullName }}</div>
-            <div class="cs-descripcion">{{ inscripcion.userEmail }}</div>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="cs-col-operario">
+            Operario
+          </th>
+          <td mat-cell *matCellDef="let inscripcion" class="cs-col-operario">
+            <div class="cs-operario-celda">
+              <div class="cs-avatar" aria-hidden="true">
+                {{ inicialesDe(inscripcion.userFullName) }}
+              </div>
+              <div class="cs-operario-textos">
+                <div class="cs-nombre">{{ inscripcion.userFullName }}</div>
+                <div class="cs-correo">{{ inscripcion.userEmail }}</div>
+              </div>
+            </div>
           </td>
         </ng-container>
 
         <ng-container matColumnDef="workshop">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>Taller</th>
-          <td mat-cell *matCellDef="let inscripcion">
-            <div class="cs-nombre">{{ inscripcion.workshopName }}</div>
-            <div class="cs-descripcion">
-              {{ inscripcion.workshopDate | date: 'medium' }} · {{ inscripcion.workshopLocation }}
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="cs-col-taller">Taller</th>
+          <td mat-cell *matCellDef="let inscripcion" class="cs-col-taller">
+            <div class="cs-taller-celda">
+              <div class="cs-nombre">{{ inscripcion.workshopName }}</div>
+              <div class="cs-taller-meta">
+                <span class="cs-meta-item">
+                  <mat-icon class="cs-meta-icon">event</mat-icon>
+                  {{ inscripcion.workshopDate | date: 'short' }}
+                </span>
+                <span class="cs-meta-sep">·</span>
+                <span class="cs-meta-item cs-meta-lugar" [matTooltip]="inscripcion.workshopLocation">
+                  <mat-icon class="cs-meta-icon">place</mat-icon>
+                  {{ inscripcion.workshopLocation }}
+                </span>
+              </div>
             </div>
           </td>
         </ng-container>
 
         <ng-container matColumnDef="enrolledAt">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>Inscrito</th>
-          <td mat-cell *matCellDef="let inscripcion">
-            {{ inscripcion.enrolledAt | date: 'short' }}
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="cs-col-fecha">Inscrito</th>
+          <td mat-cell *matCellDef="let inscripcion" class="cs-col-fecha">
+            <div class="cs-fecha-principal">{{ inscripcion.enrolledAt | date: 'dd/MM/yyyy' }}</div>
+            <div class="cs-fecha-hora">{{ inscripcion.enrolledAt | date: 'h:mm a' }}</div>
           </td>
         </ng-container>
 
         <ng-container matColumnDef="attendance">
           <th mat-header-cell *matHeaderCellDef class="cs-asistencia-col">Asistencia</th>
-          <td mat-cell *matCellDef="let inscripcion">
+          <td mat-cell *matCellDef="let inscripcion" class="cs-asistencia-col">
             @if (puedeMarcar(inscripcion)) {
-              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="cs-asistencia">
-                <mat-select
-                  [value]="inscripcion.attendanceStatus"
-                  [attr.aria-label]="'Asistencia de ' + inscripcion.userFullName"
-                  (selectionChange)="marcarAsistencia(inscripcion, $event.value)"
-                >
-                  @for (estado of estadosAsistencia; track estado) {
-                    <mat-option [value]="estado">{{ etiquetaAsistencia[estado] }}</mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
+              <button
+                type="button"
+                class="cs-asistencia-pill cs-asistencia-pill--editable"
+                [class]="'cs-asistencia-pill cs-asistencia-pill--editable cs-asistencia-pill--' + tonoDe(inscripcion)"
+                [matMenuTriggerFor]="menuAsistencia"
+                [attr.aria-label]="'Cambiar asistencia de ' + inscripcion.userFullName"
+                matTooltip="Haz clic para cambiar el estado de asistencia"
+              >
+                <span class="cs-asistencia-texto">{{ etiquetaDe(inscripcion) }}</span>
+                <mat-icon class="cs-asistencia-flecha">expand_more</mat-icon>
+              </button>
+
+              <mat-menu #menuAsistencia="matMenu" class="cs-menu-asistencia">
+                @for (estado of estadosAsistencia; track estado) {
+                  <button
+                    mat-menu-item
+                    type="button"
+                    (click)="marcarAsistencia(inscripcion, estado)"
+                  >
+                    <span
+                      [class.cs-opcion-activa]="inscripcion.attendanceStatus === estado"
+                    >
+                      {{ etiquetaAsistencia[estado] }}
+                    </span>
+                  </button>
+                }
+              </mat-menu>
             } @else {
-              <span class="cs-chip" [class]="'cs-chip cs-chip--' + tonoDe(inscripcion)">
-                {{ etiquetaDe(inscripcion) }}
-              </span>
-              @if (puedeMarcarAsistencia() && motivoNoEditable(inscripcion)) {
-                <div class="cs-motivo">{{ motivoNoEditable(inscripcion) }}</div>
-              }
+              <div class="cs-asistencia-lectura">
+                <span
+                  class="cs-asistencia-pill cs-asistencia-pill--readonly"
+                  [class]="'cs-asistencia-pill cs-asistencia-pill--readonly cs-asistencia-pill--' + tonoDe(inscripcion)"
+                >
+                  <span class="cs-asistencia-texto">{{ etiquetaDe(inscripcion) }}</span>
+                </span>
+                @if (puedeMarcarAsistencia() && motivoNoEditable(inscripcion)) {
+                  <span class="cs-motivo-bloqueo" [matTooltip]="motivoNoEditable(inscripcion)">
+                    <mat-icon class="cs-motivo-icono">lock_outline</mat-icon>
+                    {{ motivoNoEditable(inscripcion) }}
+                  </span>
+                }
+              </div>
             }
           </td>
         </ng-container>
 
         <ng-container matColumnDef="assignedAt">
-          <th mat-header-cell *matHeaderCellDef>Registrada</th>
-          <td mat-cell *matCellDef="let inscripcion">
+          <th mat-header-cell *matHeaderCellDef class="cs-col-fecha">Registrada</th>
+          <td mat-cell *matCellDef="let inscripcion" class="cs-col-fecha">
             @if (inscripcion.assignedAt) {
-              {{ inscripcion.assignedAt | date: 'short' }}
+              <div class="cs-fecha-principal">
+                {{ inscripcion.assignedAt | date: 'dd/MM/yyyy' }}
+              </div>
+              <div class="cs-fecha-hora">{{ inscripcion.assignedAt | date: 'h:mm a' }}</div>
             } @else {
               <span class="cs-sin-dato">Sin registrar</span>
             }
@@ -135,10 +196,13 @@
         </ng-container>
 
         <ng-container matColumnDef="certificate">
-          <th mat-header-cell *matHeaderCellDef>Certificado</th>
-          <td mat-cell *matCellDef="let inscripcion">
+          <th mat-header-cell *matHeaderCellDef class="cs-col-cert">Certificado</th>
+          <td mat-cell *matCellDef="let inscripcion" class="cs-col-cert">
             @if (inscripcion.certificateNumber) {
-              <span class="cs-cert-num">{{ inscripcion.certificateNumber }}</span>
+              <span class="cs-cert-badge">
+                <mat-icon class="cs-cert-icono">verified</mat-icon>
+                <span class="cs-cert-num">{{ inscripcion.certificateNumber }}</span>
+              </span>
             } @else {
               <span class="cs-sin-dato">—</span>
             }
@@ -152,17 +216,19 @@
               <button
                 matIconButton
                 type="button"
+                class="cs-btn-eliminar"
                 (click)="eliminar(inscripcion)"
-                [attr.aria-label]="'Eliminar la inscripción de ' + inscripcion.userFullName"
+                matTooltip="Cancelar inscripción"
+                [attr.aria-label]="'Cancelar la inscripción de ' + inscripcion.userFullName"
               >
-                <mat-icon>delete</mat-icon>
+                <mat-icon>block</mat-icon>
               </button>
             }
           </td>
         </ng-container>
 
         <tr mat-header-row *matHeaderRowDef="columnas()"></tr>
-        <tr mat-row *matRowDef="let fila; columns: columnas()"></tr>
+        <tr mat-row *matRowDef="let fila; columns: columnas()" class="cs-fila-inscripcion"></tr>
 
         <tr *matNoDataRow>
           <td class="cs-vacio" [attr.colspan]="columnas().length">

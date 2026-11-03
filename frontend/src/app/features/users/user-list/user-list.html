@@ -20,24 +20,36 @@
   </div>
 
   <mat-card appearance="outlined" class="cs-filtros">
-    <div class="cs-row">
-      <mat-form-field appearance="outline" class="cs-buscador">
+    <div class="cs-filtros-grid">
+      <mat-form-field
+        appearance="outline"
+        subscriptSizing="dynamic"
+        class="cs-filtro-buscador"
+      >
         <mat-label>Buscar</mat-label>
         <input matInput [formControl]="searchControl" placeholder="Nombre, apellido o correo" />
         <mat-icon matPrefix>search</mat-icon>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="cs-field-sm">
+      <mat-form-field
+        appearance="outline"
+        subscriptSizing="dynamic"
+        class="cs-filtro-taller"
+      >
         <mat-label>Rol</mat-label>
         <mat-select [formControl]="roleControl">
-          <mat-option value="">Todos</mat-option>
+          <mat-option value="">Todos los roles</mat-option>
           @for (rol of roles(); track rol.id) {
             <mat-option [value]="rol.id">{{ rol.name }}</mat-option>
           }
         </mat-select>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="cs-field-sm">
+      <mat-form-field
+        appearance="outline"
+        subscriptSizing="dynamic"
+        class="cs-field-sm"
+      >
         <mat-label>Estado</mat-label>
         <mat-select [formControl]="estadoControl">
           <mat-option value="todos">Todos</mat-option>
@@ -49,6 +61,7 @@
       <button
         mat-stroked-button
         type="button"
+        class="cs-btn-limpiar"
         (click)="limpiarFiltros()"
         matTooltip="Quitar todos los filtros"
       >
@@ -73,23 +86,39 @@
         (matSortChange)="onSortChange($event)"
       >
         <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>Usuario</th>
-          <td mat-cell *matCellDef="let usuario">
-            <div class="cs-nombre">{{ usuario.fullName }}</div>
-            <div class="cs-descripcion">{{ usuario.email }}</div>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="cs-col-operario">
+            Usuario
+          </th>
+          <td mat-cell *matCellDef="let usuario" class="cs-col-operario">
+            <div class="cs-operario-celda">
+              <div class="cs-avatar" aria-hidden="true">
+                {{ inicialesDe(usuario.fullName) }}
+              </div>
+              <div class="cs-operario-textos">
+                <div class="cs-nombre">{{ usuario.fullName }}</div>
+                <div class="cs-correo">{{ usuario.email }}</div>
+              </div>
+            </div>
           </td>
         </ng-container>
 
         <ng-container matColumnDef="role">
           <th mat-header-cell *matHeaderCellDef>Rol</th>
-          <td mat-cell *matCellDef="let usuario">{{ usuario.role.name }}</td>
+          <td mat-cell *matCellDef="let usuario">
+            <span class="cs-chip" [class]="'cs-chip cs-chip--' + tonoRol(usuario.role.name)">
+              {{ usuario.role.name }}
+            </span>
+          </td>
         </ng-container>
 
         <ng-container matColumnDef="phone">
           <th mat-header-cell *matHeaderCellDef>Teléfono</th>
           <td mat-cell *matCellDef="let usuario">
             @if (usuario.phone) {
-              {{ usuario.phone }}
+              <span class="cs-meta-item">
+                <mat-icon class="cs-meta-icon">call</mat-icon>
+                <span class="cs-fecha-principal">{{ usuario.phone }}</span>
+              </span>
             } @else {
               <span class="cs-sin-dato">Sin registrar</span>
             }
@@ -109,10 +138,13 @@
         </ng-container>
 
         <ng-container matColumnDef="lastAccess">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>Último acceso</th>
-          <td mat-cell *matCellDef="let usuario">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="cs-col-fecha">
+            Último acceso
+          </th>
+          <td mat-cell *matCellDef="let usuario" class="cs-col-fecha">
             @if (usuario.lastAccess) {
-              {{ usuario.lastAccess | date: 'short' }}
+              <div class="cs-fecha-principal">{{ usuario.lastAccess | date: 'dd/MM/yyyy' }}</div>
+              <div class="cs-fecha-hora">{{ usuario.lastAccess | date: 'h:mm a' }}</div>
             } @else {
               <span class="cs-sin-dato">Nunca</span>
             }

@@ -31,6 +31,9 @@ export class WorkshopApi {
     if (query.status) {
       params = params.set('status', query.status);
     }
+    if (query.excludeCancelled) {
+      params = params.set('excludeCancelled', 'true');
+    }
     if (query.instructorId != null) {
       params = params.set('instructorId', query.instructorId);
     }
@@ -68,7 +71,11 @@ export class WorkshopApi {
     return this.http.put<Workshop>(`${this.base}/${id}/instructor`, body);
   }
 
-  remove(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.base}/${id}`);
+  remove(id: number, reason?: string): Observable<void> {
+    let params = new HttpParams();
+    if (reason) {
+      params = params.set('reason', reason);
+    }
+    return this.http.delete<void>(`${this.base}/${id}`, { params });
   }
 }

@@ -31,6 +31,9 @@ export const LUGARES_TALLER_PREDETERMINADOS: readonly string[] = [
   'Bucaramanga - Sede Oriente, Sala de Capacitación SST',
 ];
 
+/** Opciones de aforo maximo predeterminadas para los talleres. */
+export const CUPOS_TALLER_PREDETERMINADOS: readonly number[] = [20, 30, 40, 50];
+
 export interface WorkshopFormDialogData {
   /** `null` para crear, el taller para editar. */
   workshop: Workshop | null;
@@ -152,12 +155,13 @@ function extraerHoraLocal(iso: string): string {
 
           <mat-form-field appearance="outline">
             <mat-label>Cupos máximos</mat-label>
-            <input matInput type="number" formControlName="maxCapacity" />
-            @if (
-              form.controls.maxCapacity.hasError('min') ||
-              form.controls.maxCapacity.hasError('max')
-            ) {
-              <mat-error>Entre 1 y 1000 cupos</mat-error>
+            <mat-select formControlName="maxCapacity" placeholder="Selecciona el aforo">
+              @for (cupo of cuposDisponibles; track cupo) {
+                <mat-option [value]="cupo">{{ cupo }}</mat-option>
+              }
+            </mat-select>
+            @if (form.controls.maxCapacity.hasError('required')) {
+              <mat-error>Selecciona los cupos máximos</mat-error>
             }
           </mat-form-field>
         </div>
@@ -219,6 +223,18 @@ export class WorkshopFormDialog {
       return [actual, ...LUGARES_TALLER_PREDETERMINADOS];
     }
     return LUGARES_TALLER_PREDETERMINADOS;
+  })();
+
+  /**
+   * Lista de aforos predeterminados (20, 30, 40, 50); si se edita un taller previo con un
+   * cupo distinto, se conserva en el selector para no alterar el dato existente.
+   */
+  readonly cuposDisponibles: readonly number[] = (() => {
+    const actual = this.data.workshop?.maxCapacity;
+    if (actual != null && !CUPOS_TALLER_PREDETERMINADOS.includes(actual)) {
+      return [actual, ...CUPOS_TALLER_PREDETERMINADOS].sort((a, b) => a - b);
+    }
+    return CUPOS_TALLER_PREDETERMINADOS;
   })();
 
   /**

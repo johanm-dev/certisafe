@@ -20,38 +20,77 @@
   </div>
 
   <mat-card appearance="outlined" class="cs-filtros">
-    <div class="cs-row">
-      <mat-form-field appearance="outline" class="cs-buscador">
+    <div class="cs-filtros-grid">
+      <mat-form-field
+        appearance="outline"
+        subscriptSizing="dynamic"
+        class="cs-filtro-buscador"
+      >
         <mat-label>Buscar</mat-label>
         <input matInput [formControl]="searchControl" placeholder="Nombre o lugar" />
         <mat-icon matPrefix>search</mat-icon>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="cs-field-sm">
+      <mat-form-field
+        appearance="outline"
+        subscriptSizing="dynamic"
+        class="cs-filtro-taller"
+      >
         <mat-label>Estado</mat-label>
         <mat-select [formControl]="statusControl">
-          <mat-option value="">Todos</mat-option>
+          <mat-option value="">Activos (sin archivados)</mat-option>
+          <mat-option value="TODOS">Todos (incluyendo archivados)</mat-option>
           @for (estado of estados; track estado) {
-            <mat-option [value]="estado">{{ etiquetaEstado[estado] }}</mat-option>
+            <mat-option [value]="estado">
+              {{ estado === 'CANCELADO' ? 'Cancelado / Archivado' : etiquetaEstado[estado] }}
+            </mat-option>
           }
         </mat-select>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="cs-field-sm">
+      <mat-form-field
+        appearance="outline"
+        subscriptSizing="dynamic"
+        class="cs-field-sm"
+      >
         <mat-label>Desde</mat-label>
-        <input matInput [matDatepicker]="pickerDesde" [formControl]="fromControl" />
+        <input
+          matInput
+          [matDatepicker]="pickerDesde"
+          [formControl]="fromControl"
+          [max]="hasta()"
+          readonly
+          (click)="pickerDesde.open()"
+        />
         <mat-datepicker-toggle matIconSuffix [for]="pickerDesde" />
         <mat-datepicker #pickerDesde />
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="cs-field-sm">
+      <mat-form-field
+        appearance="outline"
+        subscriptSizing="dynamic"
+        class="cs-field-sm"
+      >
         <mat-label>Hasta</mat-label>
-        <input matInput [matDatepicker]="pickerHasta" [formControl]="toControl" />
+        <input
+          matInput
+          [matDatepicker]="pickerHasta"
+          [formControl]="toControl"
+          [min]="desde()"
+          readonly
+          (click)="pickerHasta.open()"
+        />
         <mat-datepicker-toggle matIconSuffix [for]="pickerHasta" />
         <mat-datepicker #pickerHasta />
       </mat-form-field>
 
-      <button mat-stroked-button type="button" (click)="limpiarFiltros()" matTooltip="Quitar todos los filtros">
+      <button
+        mat-stroked-button
+        type="button"
+        class="cs-btn-limpiar"
+        (click)="limpiarFiltros()"
+        matTooltip="Quitar todos los filtros"
+      >
         <mat-icon>filter_alt_off</mat-icon>
         Limpiar
       </button>
@@ -73,35 +112,54 @@
         (matSortChange)="onSortChange($event)"
       >
         <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>Taller</th>
-          <td mat-cell *matCellDef="let taller">
-            <div class="cs-nombre">{{ taller.name }}</div>
-            @if (taller.description) {
-              <div class="cs-descripcion">{{ taller.description }}</div>
-            }
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="cs-col-taller">Taller</th>
+          <td mat-cell *matCellDef="let taller" class="cs-col-taller">
+            <div class="cs-taller-celda">
+              <div class="cs-nombre">{{ taller.name }}</div>
+              @if (taller.description) {
+                <div class="cs-descripcion" [matTooltip]="taller.description">
+                  {{ taller.description }}
+                </div>
+              }
+            </div>
           </td>
         </ng-container>
 
         <ng-container matColumnDef="workshopDate">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header>Fecha</th>
-          <td mat-cell *matCellDef="let taller">{{ taller.workshopDate | date: 'medium' }}</td>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header class="cs-col-fecha">Fecha</th>
+          <td mat-cell *matCellDef="let taller" class="cs-col-fecha">
+            <div class="cs-fecha-principal">
+              {{ taller.workshopDate | date: 'dd/MM/yyyy' }}
+            </div>
+            <div class="cs-fecha-hora">{{ taller.workshopDate | date: 'h:mm a' }}</div>
+          </td>
         </ng-container>
 
         <ng-container matColumnDef="durationMinutes">
           <th mat-header-cell *matHeaderCellDef mat-sort-header>Duración</th>
-          <td mat-cell *matCellDef="let taller">{{ duracion(taller.durationMinutes) }}</td>
+          <td mat-cell *matCellDef="let taller">
+            <span class="cs-meta-item">
+              <mat-icon class="cs-meta-icon">schedule</mat-icon>
+              <span class="cs-fecha-principal">{{ duracion(taller.durationMinutes) }}</span>
+            </span>
+          </td>
         </ng-container>
 
         <ng-container matColumnDef="location">
           <th mat-header-cell *matHeaderCellDef mat-sort-header>Lugar</th>
-          <td mat-cell *matCellDef="let taller">{{ taller.location }}</td>
+          <td mat-cell *matCellDef="let taller">
+            <span class="cs-meta-item cs-meta-lugar" [matTooltip]="taller.location">
+              <mat-icon class="cs-meta-icon">place</mat-icon>
+              <span>{{ taller.location }}</span>
+            </span>
+          </td>
         </ng-container>
 
         <ng-container matColumnDef="maxCapacity">
           <th mat-header-cell *matHeaderCellDef mat-sort-header class="cs-num">Cupos</th>
           <td mat-cell *matCellDef="let taller" class="cs-num">
-            <div>{{ cuposDe(taller) }}</div>
-            <div class="cs-descripcion">{{ libresDe(taller) }} disponibles</div>
+            <div class="cs-fecha-principal">{{ cuposDe(taller) }}</div>
+            <div class="cs-fecha-hora">{{ libresDe(taller) }} disponibles</div>
           </td>
         </ng-container>
 
@@ -109,7 +167,12 @@
           <th mat-header-cell *matHeaderCellDef>Instructor</th>
           <td mat-cell *matCellDef="let taller">
             @if (taller.instructor; as instructor) {
-              {{ instructor.fullName }}
+              <div class="cs-operario-celda">
+                <div class="cs-avatar cs-avatar--sm" aria-hidden="true">
+                  {{ inicialesDe(instructor.fullName) }}
+                </div>
+                <span class="cs-nombre">{{ instructor.fullName }}</span>
+              </div>
             } @else {
               <span class="cs-sin-dato">Sin asignar</span>
             }
@@ -174,14 +237,14 @@
               @if (puedeAsignar() && esEditable(taller)) {
                 <button mat-menu-item type="button" (click)="asignarInstructor(taller)">
                   <mat-icon>person_add</mat-icon>
-                  <span>Asignar instructor</span>
+                  <span>{{ taller.instructor ? 'Reasignar instructor' : 'Asignar instructor' }}</span>
                 </button>
               }
 
-              @if (puedeBorrar() && taller.status === 'PROGRAMADO') {
-                <button mat-menu-item type="button" (click)="eliminarTaller(taller)">
-                  <mat-icon>delete</mat-icon>
-                  <span>Eliminar</span>
+              @if ((puedeBorrar() || puedeCambiarEstado()) && esEditable(taller)) {
+                <button mat-menu-item type="button" (click)="archivarTaller(taller)">
+                  <mat-icon>inventory_2</mat-icon>
+                  <span>Archivar taller</span>
                 </button>
               }
             </mat-menu>

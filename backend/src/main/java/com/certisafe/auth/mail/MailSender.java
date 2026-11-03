@@ -1,12 +1,8 @@
 package com.certisafe.auth.mail;
 
 /**
- * Envio del correo de recuperacion de contrasena (RF-023).
- *
- * <p>Es una interfaz y no una clase concreta porque la entrega no tiene un servidor SMTP: sin
- * ella, en cuanto alguien configurara credenciales de correo de prueba el enlace se enviaria a
- * buzones reales de prueba, o peor, a correos inventados. Con la interfaz, la eleccion de como
- * se entrega queda en la configuracion y no en el codigo de recuperacion.</p>
+ * Envio de correos transaccionales de CertiSafe: recuperacion de contrasena (RF-023)
+ * y bienvenida con credenciales al crear un usuario.
  */
 public interface MailSender {
 
@@ -17,4 +13,15 @@ public interface MailSender {
      * @param link    enlace completo, ya con el token
      */
     void sendRecoveryLink(String toEmail, String link);
+
+    /**
+     * Envia el correo de bienvenida con las credenciales asignadas al crear la cuenta.
+     *
+     * @param toEmail     correo del nuevo usuario
+     * @param fullName    nombre completo del usuario
+     * @param roleName    nombre del rol asignado (ADMIN, INSTRUCTOR, OPERATOR)
+     * @param rawPassword contrasena asignada en texto plano
+     */
+    default void sendWelcomeCredentials(String toEmail, String fullName, String roleName, String rawPassword) {
+    }
 }

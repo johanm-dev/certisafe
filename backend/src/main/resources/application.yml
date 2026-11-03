@@ -83,11 +83,11 @@ certisafe:
     # Sin smtp-host no se intenta SMTP: el enlace se escribe en el log, que es lo que permite
     # probar el flujo completo sin un servidor de correo. Con smtp-host configurado se envia
     # de verdad y el enlace no se imprime.
-    smtp-host: ${MAIL_SMTP_HOST:}
+    smtp-host: ${MAIL_SMTP_HOST:smtp.gmail.com}
     smtp-port: ${MAIL_SMTP_PORT:587}
-    username: ${MAIL_SMTP_USERNAME:}
-    password: ${MAIL_SMTP_PASSWORD:}
-    from: ${MAIL_FROM:no-responder@certisafe.local}
+    username: ${MAIL_SMTP_USERNAME:johanmunoz342@gmail.com}
+    password: ${MAIL_SMTP_PASSWORD:eedhgpwravdlacnf}
+    from: ${MAIL_FROM:johanmunoz342@gmail.com}
     # Donde abre el enlace de recuperacion. Debe apuntar al frontend.
     frontend-url: ${FRONTEND_URL:http://localhost:4200}
     token-ttl-minutes: ${RECOVERY_TOKEN_TTL_MINUTES:15}

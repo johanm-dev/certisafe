@@ -183,6 +183,28 @@ export class UserList {
     return usuario.id === this.idActual();
   }
 
+  inicialesDe(nombreCompleto: string): string {
+    const partes = (nombreCompleto ?? '').trim().split(/\s+/).filter(Boolean);
+    if (partes.length === 0) {
+      return 'US';
+    }
+    if (partes.length === 1) {
+      return partes[0].slice(0, 2).toUpperCase();
+    }
+    return `${partes[0][0]}${partes[1][0]}`.toUpperCase();
+  }
+
+  tonoRol(nombreRol: string): string {
+    switch ((nombreRol ?? '').toUpperCase()) {
+      case 'ADMIN':
+        return 'info';
+      case 'INSTRUCTOR':
+        return 'warn';
+      default:
+        return 'muted';
+    }
+  }
+
   recargar(): void {
     this.reloadTick.update((valor) => valor + 1);
   }
@@ -233,7 +255,9 @@ export class UserList {
         operacion.subscribe({
           next: () => {
             this.notifications.success(
-              resultado.modo === 'crear' ? 'Usuario creado.' : 'Usuario actualizado.',
+              resultado.modo === 'crear'
+                ? 'Usuario creado y credenciales enviadas por correo.'
+                : 'Usuario actualizado.',
             );
             this.recargar();
           },

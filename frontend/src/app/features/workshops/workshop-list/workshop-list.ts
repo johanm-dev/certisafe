@@ -25,6 +25,7 @@ import { PageResponse } from '@core/models/api.model';
 import { ExportFormat } from '@core/models/import.model';
 import { EnrollRequest } from '@core/models/enrollment.model';
 import {
+  AssignInstructorRequest,
   StatusChangeRequest,
   WORKSHOP_STATUS_LABEL,
   WORKSHOP_STATUS_TONE,
@@ -36,7 +37,6 @@ import {
 } from '@core/models/workshop.model';
 import { NotificationService } from '@core/notification/notification.service';
 import { endOfDayIso, formatDuration, startOfDayIso } from '@core/util/datetime';
-import { ConfirmDialog } from '@shared/confirm-dialog/confirm-dialog';
 import { ExportButton } from '@shared/export-button/export-button';
 import { debounceTime, distinctUntilChanged, startWith } from 'rxjs';
 import { EnrollDialog } from '../../enrollments/enroll-dialog/enroll-dialog';
@@ -106,7 +106,9 @@ export class WorkshopList {
 
   // --- Filtros ---
   readonly searchControl = new FormControl('', { nonNullable: true });
-  readonly statusControl = new FormControl<WorkshopStatus | ''>('', { nonNullable: true });
+  readonly statusControl = new FormControl<WorkshopStatus | '' | 'TODOS'>('', {
+    nonNullable: true,
+  });
   readonly fromControl = new FormControl<Date | null>(null);
   readonly toControl = new FormControl<Date | null>(null);
 
@@ -115,10 +117,10 @@ export class WorkshopList {
     { initialValue: '' },
   );
   private readonly estado = toSignal(this.statusControl.valueChanges, {
-    initialValue: '' as WorkshopStatus | '',
+    initialValue: '' as WorkshopStatus | '' | 'TODOS',
   });
-  private readonly desde = toSignal(this.fromControl.valueChanges, { initialValue: null });
-  private readonly hasta = toSignal(this.toControl.valueChanges, { initialValue: null });
+  readonly desde = toSignal(this.fromControl.valueChanges, { initialValue: null });
+  readonly hasta = toSignal(this.toControl.valueChanges, { initialValue: null });
 
   // --- Paginacion y orden (servidor) ---
   readonly pageIndex = signal(0);
@@ -133,7 +135,7 @@ export class WorkshopList {
   readonly total = computed(() => this.result()?.totalElements ?? 0);
   readonly vacio = computed(() => !this.loading() && this.rows().length === 0);
 
-  /** Contador que solo sirve para forzar una recarga tras crear, editar o borrar. */
+  /** Contador que solo sirve para forzar una recarga tras crear, editar o archivar. */
   private readonly reloadTick = signal(0);
 
   // --- Constantes que usa la plantilla ---
@@ -162,7 +164,9 @@ export class WorkshopList {
       size: this.pageSize(),
       sort: `${this.sortField()},${this.sortDirection()}`,
       search: this.search().trim() || undefined,
-      status: filtroEstado === '' ? undefined : filtroEstado,
+      status:
+        filtroEstado === '' || filtroEstado === 'TODOS' ? undefined : filtroEstado,
+      excludeCancelled: filtroEstado === '' ? true : undefined,
       from: fechaDesde ? startOfDayIso(fechaDesde) : undefined,
       to: fechaHasta ? endOfDayIso(fechaHasta) : undefined,
     };
@@ -177,12 +181,20 @@ export class WorkshopList {
     this.statusControl.valueChanges
       .pipe(takeUntilDestroyed())
       .subscribe(() => this.pageIndex.set(0));
-    this.fromControl.valueChanges
-      .pipe(takeUntilDestroyed())
-      .subscribe(() => this.pageIndex.set(0));
-    this.toControl.valueChanges
-      .pipe(takeUntilDestroyed())
-      .subscribe(() => this.pageIndex.set(0));
+    this.fromControl.valueChanges.pipe(takeUntilDestroyed()).subscribe((fechaDesde) => {
+      const fechaHasta = this.toControl.value;
+      if (fechaDesde && fechaHasta && fechaHasta.getTime() < fechaDesde.getTime()) {
+        this.toControl.setValue(null);
+      }
+      this.pageIndex.set(0);
+    });
+    this.toControl.valueChanges.pipe(takeUntilDestroyed()).subscribe((fechaHasta) => {
+      const fechaDesde = this.fromControl.value;
+      if (fechaDesde && fechaHasta && fechaHasta.getTime() < fechaDesde.getTime()) {
+        this.toControl.setValue(fechaDesde, { emitEvent: false });
+      }
+      this.pageIndex.set(0);
+    });
 
     effect((onCleanup) => {
       const consulta = this.query();
@@ -267,6 +279,17 @@ export class WorkshopList {
     return taller.availableSeats;
   }
 
+  inicialesDe(nombreCompleto: string): string {
+    const partes = (nombreCompleto ?? '').trim().split(/\s+/).filter(Boolean);
+    if (partes.length === 0) {
+      return 'IN';
+    }
+    if (partes.length === 1) {
+      return partes[0].slice(0, 2).toUpperCase();
+    }
+    return `${partes[0][0]}${partes[1][0]}`.toUpperCase();
+  }
+
   recargar(): void {
     this.reloadTick.update((valor) => valor + 1);
   }
@@ -329,20 +352,23 @@ export class WorkshopList {
   }
 
   asignarInstructor(taller: Workshop): void {
+    const esReasignacion = Boolean(taller.instructor?.id);
     this.dialog
       .open(AssignInstructorDialog, {
-        width: '480px',
+        width: '500px',
         maxWidth: '95vw',
         data: { workshop: taller },
       })
       .afterClosed()
-      .subscribe((instructorId: number | null | undefined) => {
-        if (instructorId == null) {
+      .subscribe((peticion: AssignInstructorRequest | undefined) => {
+        if (!peticion) {
           return;
         }
-        this.api.assignInstructor(taller.id, { instructorId }).subscribe({
+        this.api.assignInstructor(taller.id, peticion).subscribe({
           next: () => {
-            this.notifications.success('Instructor asignado.');
+            this.notifications.success(
+              esReasignacion ? 'Instructor reasignado correctamente.' : 'Instructor asignado.',
+            );
             this.recargar();
           },
           error: (error: unknown) => this.notifications.error(describeHttpError(error)),
@@ -388,28 +414,26 @@ export class WorkshopList {
       });
   }
 
-  eliminarTaller(taller: Workshop): void {
+  /**
+   * Reemplaza el borrado fisico por la eliminacion logica / archivado del taller:
+   * pide obligatoriamente el motivo, cambia el estado a CANCELADO y lo oculta del
+   * listado de talleres activos conservando toda su trazabilidad.
+   */
+  archivarTaller(taller: Workshop): void {
     this.dialog
-      .open(ConfirmDialog, {
-        width: '470px',
-        data: {
-          title: 'Eliminar taller',
-          message:
-            `Se eliminará el taller "${taller.name}". ` +
-            'Solo es posible si sigue programado y no tiene inscripciones; ' +
-            'para anular uno en curso, use el cambio de estado a Cancelado.',
-          confirmLabel: 'Eliminar',
-          destructive: true,
-        },
+      .open(StatusChangeDialog, {
+        width: '480px',
+        maxWidth: '95vw',
+        data: { workshop: taller, archiveMode: true },
       })
       .afterClosed()
-      .subscribe((confirmado: boolean | undefined) => {
-        if (!confirmado) {
+      .subscribe((peticion: StatusChangeRequest | undefined) => {
+        if (!peticion) {
           return;
         }
-        this.api.remove(taller.id).subscribe({
+        this.api.changeStatus(taller.id, peticion).subscribe({
           next: () => {
-            this.notifications.success('Taller eliminado.');
+            this.notifications.success('Taller archivado correctamente.');
             this.recargar();
           },
           error: (error: unknown) => this.notifications.error(describeHttpError(error)),

@@ -64,7 +64,7 @@ export class Login {
       next: (user) => {
         this.loading.set(false);
         this.notifications.success(`Bienvenido, ${user.firstName}`);
-        void this.router.navigate(['/talleres']);
+        void this.router.navigate(['/talleres'], { replaceUrl: true });
       },
       error: (error: unknown) => {
         this.loading.set(false);

@@ -133,7 +133,7 @@ export class AuthService {
         .subscribe({ error: () => undefined });
     }
     this.clearSession();
-    void this.router.navigate(['/login']);
+    void this.router.navigate(['/login'], { replaceUrl: true });
   }
 
   /** Limpia la sesion en el cliente sin llamar al backend. */

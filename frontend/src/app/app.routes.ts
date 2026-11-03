@@ -1,16 +1,18 @@
 import { Routes } from '@angular/router';
-import { authGuard, permissionGuard } from '@core/auth/auth.guard';
+import { authGuard, guestGuard, permissionGuard } from '@core/auth/auth.guard';
 
 export const routes: Routes = [
   {
     path: 'login',
     title: 'Acceso · CertiSafe',
+    canActivate: [guestGuard],
     loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),
   },
   {
     // RF-023: las dos pantallas de recuperacion son publicas, por definicion.
     path: 'recuperar-contrasena',
     title: 'Recuperar contraseña · CertiSafe',
+    canActivate: [guestGuard],
     loadComponent: () =>
       import('./features/auth/password-recovery/password-recovery').then(
         (m) => m.PasswordRecovery,
@@ -19,6 +21,7 @@ export const routes: Routes = [
   {
     path: 'restablecer-contrasena',
     title: 'Nueva contraseña · CertiSafe',
+    canActivate: [guestGuard],
     loadComponent: () =>
       import('./features/auth/reset-password/reset-password').then((m) => m.ResetPassword),
   },

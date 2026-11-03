@@ -8,14 +8,20 @@ table {
 // `.cs-cert-num` (el número en monoespaciada) está en `src/styles.scss` porque también lo
 // usa la tabla de inscripciones.
 
-.cs-motivo {
-  margin-top: 4px;
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 11px;
-  color: var(--mat-sys-on-surface-variant);
+.cs-estado-celda {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+}
+
+.cs-btn-motivo {
+  height: 24px !important;
+  min-height: 24px !important;
+  padding: 0 10px !important;
+  font-size: 11.5px !important;
+  line-height: 22px !important;
+  border-radius: 999px !important;
 }
 
 .cs-acciones-cabecera {

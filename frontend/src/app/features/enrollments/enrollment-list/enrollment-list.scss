@@ -1,23 +1,95 @@
-// Los estilos comunes de los listados (cabecera, filtros, chips, tabla) están en
-// `src/styles.scss`. Aquí queda solo lo propio de la tabla de inscripciones.
-
-table {
-  min-width: 1040px;
+.cs-tabla-inscripciones {
+  min-width: 1080px;
 }
 
 .cs-asistencia-col {
-  width: 210px;
+  width: 215px;
+  min-width: 205px;
 }
 
-.cs-asistencia {
-  width: 190px;
-  font-size: 13px;
+.cs-asistencia-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 13px;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.2;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
-.cs-motivo {
-  margin-top: 4px;
-  max-width: 190px;
+.cs-asistencia-pill--editable {
+  cursor: pointer;
+  padding-right: 10px;
+}
+
+.cs-asistencia-pill--editable:hover {
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+}
+
+.cs-asistencia-pill--ok {
+  background: #f2f9f5;
+  color: #2d6a4f;
+  border-color: #b7e4c7;
+}
+
+.cs-asistencia-pill--orange {
+  background: #fdf4ed;
+  color: #8c4a27;
+  border-color: #edc4a8;
+}
+
+.cs-asistencia-pill--error {
+  background: #fdf3f3;
+  color: #8c2f39;
+  border-color: #e8b4b8;
+}
+
+.cs-asistencia-pill--warn {
+  background: #fdf9ef;
+  color: #7c5e10;
+  border-color: #e9d8a6;
+}
+
+.cs-asistencia-flecha {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  opacity: 0.7;
+}
+
+.cs-asistencia-lectura {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+}
+
+.cs-motivo-bloqueo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 11px;
-  line-height: 1.4;
-  color: var(--mat-sys-on-surface-variant);
+  color: #64748b;
+}
+
+.cs-motivo-icono {
+  font-size: 13px;
+  width: 13px;
+  height: 13px;
+  color: #94a3b8;
+}
+
+.cs-opcion-activa {
+  font-weight: 600;
+}
+
+.cs-col-cert {
+  min-width: 165px;
+  white-space: nowrap;
 }

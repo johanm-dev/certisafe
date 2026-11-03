@@ -10,13 +10,13 @@ table {
 // el chip de la columna "Apto": tiene que verse al recorrer la tabla entera.
 // El selector repite `.mat-mdc-row` para ganarle en especificidad al estilo de Material.
 .mat-mdc-row.cs-no-apto {
-  background: #fff5f5;
+  background: #fcf6f6;
 
   td:first-child {
-    box-shadow: inset 3px 0 0 #b3261e;
+    box-shadow: inset 3px 0 0 #c97a7e;
   }
 }
 
 .mat-mdc-row.cs-no-apto:hover {
-  background: #ffecec;
+  background: #f9efef;
 }

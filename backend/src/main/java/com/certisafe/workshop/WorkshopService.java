@@ -73,13 +73,19 @@ public class WorkshopService {
     public PageResponse<WorkshopResponse> list(String search, WorkshopStatus status, Long instructorId,
                                                OffsetDateTime from, OffsetDateTime to, Pageable pageable,
                                                UserPrincipal actor) {
+        return list(search, status, false, instructorId, from, to, pageable, actor);
+    }
+
+    public PageResponse<WorkshopResponse> list(String search, WorkshopStatus status, Boolean excludeCancelled,
+                                               Long instructorId, OffsetDateTime from, OffsetDateTime to,
+                                               Pageable pageable, UserPrincipal actor) {
         // RF-011 (historia de usuario): el menu del INSTRUCTOR muestra "solo sus talleres
         // asignados". Se fuerza aqui, en el servidor: ocultarlos en la interfaz no impediria
         // pedirlos por API.
         Long instructorFilter = isInstructor(actor) ? actor.getId() : instructorId;
 
         Page<Workshop> page = workshopRepository.findAll(
-                filter(search, status, instructorFilter, from, to), pageable);
+                filter(search, status, excludeCancelled, instructorFilter, from, to), pageable);
         Map<Long, Long> inscritos = countsByWorkshop(page.getContent());
         return PageResponse.of(page, workshop -> toResponse(workshop, inscritos));
     }
@@ -91,12 +97,12 @@ public class WorkshopService {
     @Transactional(readOnly = true)
     public List<Workshop> findAllForExport(String search, WorkshopStatus status, Long instructorId,
                                            OffsetDateTime from, OffsetDateTime to) {
-        return workshopRepository.findAll(filter(search, status, instructorId, from, to),
+        return workshopRepository.findAll(filter(search, status, false, instructorId, from, to),
                 Sort.by(Sort.Direction.DESC, "workshopDate"));
     }
 
-    private Specification<Workshop> filter(String search, WorkshopStatus status, Long instructorId,
-                                           OffsetDateTime from, OffsetDateTime to) {
+    private Specification<Workshop> filter(String search, WorkshopStatus status, Boolean excludeCancelled,
+                                           Long instructorId, OffsetDateTime from, OffsetDateTime to) {
         Specification<Workshop> spec = (root, query, cb) -> cb.conjunction();
 
         if (StringUtils.hasText(search)) {
@@ -107,6 +113,8 @@ public class WorkshopService {
         }
         if (status != null) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
+        } else if (Boolean.TRUE.equals(excludeCancelled)) {
+            spec = spec.and((root, query, cb) -> cb.notEqual(root.get("status"), WorkshopStatus.CANCELADO));
         }
         if (instructorId != null) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("instructor").get("id"), instructorId));
@@ -225,6 +233,11 @@ public class WorkshopService {
 
     @Transactional
     public WorkshopResponse assignInstructor(Long id, Long instructorId, Long actorId) {
+        return assignInstructor(id, instructorId, null, actorId);
+    }
+
+    @Transactional
+    public WorkshopResponse assignInstructor(Long id, Long instructorId, String reason, Long actorId) {
         Workshop workshop = findOrFail(id);
         requireEditable(workshop, "cambiar el instructor de");
 
@@ -235,50 +248,81 @@ public class WorkshopService {
         if (!Boolean.TRUE.equals(instructor.getActive())) {
             throw BusinessException.conflict("El instructor " + instructor.getEmail() + " está inactivo");
         }
-        if (workshop.getInstructor() != null && workshop.getInstructor().getId().equals(instructorId)) {
+
+        User previousInstructor = workshop.getInstructor();
+        if (previousInstructor != null && previousInstructor.getId().equals(instructorId)) {
             throw BusinessException.conflict("Ese instructor ya está asignado a este taller");
+        }
+        if (previousInstructor != null && !StringUtils.hasText(reason)) {
+            throw new BusinessException("Debe indicar la razón por la cual se cambia el instructor");
         }
 
         validateInstructorNoOverlap(instructor, workshop);
 
+        User autor = requireUser(actorId);
+
         // Se conserva la asignación anterior marcada como no vigente: es el historial.
+        // IMPORTANTE: saveAndFlush para que PostgreSQL actualice is_current = false antes
+        // de insertar la nueva fila con is_current = true (índice único parcial uq_workshop_assignments_current).
         assignmentRepository.findByWorkshopIdAndIsCurrentTrue(id).ifPresent(previous -> {
             previous.setIsCurrent(false);
-            assignmentRepository.save(previous);
+            assignmentRepository.saveAndFlush(previous);
         });
 
         WorkshopAssignment assignment = new WorkshopAssignment();
         assignment.setWorkshop(workshop);
         assignment.setInstructor(instructor);
-        assignment.setAssignedBy(requireUser(actorId));
+        assignment.setAssignedBy(autor);
         assignment.setIsCurrent(true);
         assignmentRepository.save(assignment);
 
         workshop.setInstructor(instructor);
-        return toResponse(workshopRepository.save(workshop), Map.of());
+        Workshop saved = workshopRepository.save(workshop);
+
+        if (previousInstructor != null) {
+            String motivoCambio = "Reasignación de instructor (" + previousInstructor.fullName()
+                    + " → " + instructor.fullName() + "): " + reason.trim();
+            statusHistoryRepository.save(StatusHistory.of(
+                    saved,
+                    saved.getStatus(),
+                    saved.getStatus(),
+                    autor,
+                    motivoCambio,
+                    OffsetDateTime.now(ZoneOffset.UTC)
+            ));
+        }
+
+        return toResponse(saved, Map.of());
     }
 
     @Transactional
     public void delete(Long id) {
+        delete(id, null, null);
+    }
+
+    @Transactional
+    public void delete(Long id, String reason, UserPrincipal actor) {
         Workshop workshop = findOrFail(id);
+        requireEditable(workshop, "archivar");
 
-        if (workshop.getStatus() != WorkshopStatus.PROGRAMADO) {
-            throw BusinessException.conflict(
-                    "Solo se pueden borrar talleres en estado PROGRAMADO. Un taller en "
-                            + workshop.getStatus() + " se anula cambiándolo a CANCELADO.");
+        User autor = actor != null ? requireUser(actor.getId()) : workshop.getCreatedBy();
+        String textoMotivo = StringUtils.hasText(reason)
+                ? reason.trim()
+                : "Archivado por administración";
+        if (!textoMotivo.startsWith("Taller archivado:")) {
+            textoMotivo = "Taller archivado: " + textoMotivo;
         }
 
-        long enrolled = enrollmentRepository.countByWorkshopId(id);
-        if (enrolled > 0) {
-            throw BusinessException.conflict(
-                    "El taller ya tiene " + enrolled + " inscripción(es). Cancele el taller en lugar de borrarlo.");
-        }
+        WorkshopStatus previousStatus = workshop.getStatus();
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
 
-        // Las FK son ON DELETE CASCADE en la base, pero se borra explícito para que quede
-        // claro y para no depender del motor.
-        statusHistoryRepository.deleteByWorkshopId(id);
-        assignmentRepository.deleteAll(assignmentRepository.findByWorkshopIdOrderByAssignedAtDesc(id));
-        workshopRepository.delete(workshop);
+        workshop.setStatus(WorkshopStatus.CANCELADO);
+        workshop.setStatusChangedAt(now);
+        workshopRepository.save(workshop);
+
+        statusHistoryRepository.save(
+                StatusHistory.of(workshop, previousStatus, WorkshopStatus.CANCELADO, autor, textoMotivo, now)
+        );
     }
 
     private void validateInstructorNoOverlap(User instructor, Workshop targetWorkshop) {
