@@ -8,6 +8,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '@core/auth/auth.service';
+import { esCorreoSuperAdmin } from '@core/models/user.model';
 import { NotificationService } from '@core/notification/notification.service';
 import { ConfirmDialog } from '@shared/confirm-dialog/confirm-dialog';
 import { firstValueFrom } from 'rxjs';
@@ -35,6 +36,7 @@ export class Shell {
   private readonly notifications = inject(NotificationService);
 
   readonly user = this.auth.user;
+  readonly esSuperAdmin = computed(() => esCorreoSuperAdmin(this.user()?.email));
 
   /**
    * El menu se arma con los permisos del usuario, no con su rol: asi, si al rol se le

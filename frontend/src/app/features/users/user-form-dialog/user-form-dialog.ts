@@ -4,9 +4,11 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import {
+  esCorreoSuperAdmin,
   PASSWORD_PATTERN,
   Role,
   User,
@@ -52,11 +54,22 @@ export type UserFormResult =
     MatSelectModule,
     MatCheckboxModule,
     MatButtonModule,
+    MatIconModule,
   ],
   template: `
     <h2 mat-dialog-title>{{ esEdicion ? 'Editar usuario' : 'Nuevo usuario' }}</h2>
 
     <mat-dialog-content>
+      @if (esSuperAdmin) {
+        <div class="cs-superadmin-aviso">
+          <mat-icon>verified_user</mat-icon>
+          <span>
+            Cuenta propietaria del sistema (<strong>Super Admin</strong>). El correo, el rol y el
+            estado activo están protegidos y no pueden modificarse.
+          </span>
+        </div>
+      }
+
       <form [formGroup]="form" class="cs-form">
         <mat-form-field appearance="outline">
           <mat-label>Correo electrónico</mat-label>
@@ -109,7 +122,9 @@ export type UserFormResult =
             <mat-label>Rol</mat-label>
             <mat-select formControlName="roleId">
               @for (rol of data.roles; track rol.id) {
-                <mat-option [value]="rol.id">{{ rol.name }}</mat-option>
+                <mat-option [value]="rol.id">
+                  {{ esSuperAdmin && rol.name === 'ADMIN' ? 'SUPER ADMIN' : rol.name }}
+                </mat-option>
               }
             </mat-select>
             @if (form.controls.roleId.hasError('required')) {
@@ -171,6 +186,27 @@ export type UserFormResult =
     mat-checkbox {
       margin-top: 8px;
     }
+
+    .cs-superadmin-aviso {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+      border-radius: 8px;
+      background: #f3f2fb;
+      border: 1px solid #d6d3f0;
+      color: #4338ca;
+      font-size: 13px;
+      line-height: 1.4;
+
+      mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+      }
+    }
   `,
 })
 export class UserFormDialog {
@@ -179,13 +215,13 @@ export class UserFormDialog {
   private readonly fb = inject(FormBuilder).nonNullable;
 
   readonly esEdicion = this.data.user !== null;
+  readonly esSuperAdmin = esCorreoSuperAdmin(this.data.user?.email);
 
   readonly form = this.fb.group({
-    email: this.fb.control(this.data.user?.email ?? '', [
-      Validators.required,
-      Validators.email,
-      Validators.maxLength(255),
-    ]),
+    email: this.fb.control(
+      { value: this.data.user?.email ?? '', disabled: this.esSuperAdmin },
+      [Validators.required, Validators.email, Validators.maxLength(255)],
+    ),
     firstName: this.fb.control(this.data.user?.firstName ?? '', [
       Validators.required,
       Validators.maxLength(100),
@@ -199,8 +235,11 @@ export class UserFormDialog {
       Validators.maxLength(10),
       Validators.pattern(/^\d{10}$/),
     ]),
-    roleId: this.fb.control<number | null>(this.data.user?.role.id ?? null, [Validators.required]),
-    active: this.fb.control(this.data.user?.active ?? true),
+    roleId: this.fb.control<number | null>(
+      { value: this.data.user?.role.id ?? null, disabled: this.esSuperAdmin },
+      [Validators.required],
+    ),
+    active: this.fb.control({ value: this.data.user?.active ?? true, disabled: this.esSuperAdmin }),
     password: this.fb.control(
       '',
       this.esEdicion

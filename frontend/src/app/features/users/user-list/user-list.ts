@@ -21,7 +21,7 @@ import { DownloadService } from '@core/http/download.service';
 import { describeHttpError } from '@core/http/http-error';
 import { PageResponse } from '@core/models/api.model';
 import { ExportFormat } from '@core/models/import.model';
-import { Role, User } from '@core/models/user.model';
+import { esCorreoSuperAdmin, Role, User } from '@core/models/user.model';
 import { NotificationService } from '@core/notification/notification.service';
 import { ConfirmDialog } from '@shared/confirm-dialog/confirm-dialog';
 import { ExportButton } from '@shared/export-button/export-button';
@@ -181,6 +181,11 @@ export class UserList {
   /** Un usuario no puede desactivarse a sí mismo: el backend responde 400. */
   esUsuarioActual(usuario: User): boolean {
     return usuario.id === this.idActual();
+  }
+
+  /** Propietario del sistema (Super Admin): nadie más puede cambiarle el rol ni desactivarlo. */
+  esSuperAdmin(usuario: User): boolean {
+    return esCorreoSuperAdmin(usuario.email);
   }
 
   inicialesDe(nombreCompleto: string): string {

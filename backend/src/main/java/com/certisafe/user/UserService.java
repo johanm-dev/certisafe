@@ -31,6 +31,9 @@ public class UserService {
 
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
+    /** Correo del propietario del sistema (Super Admin), protegido contra cambio de rol o baja. */
+    public static final String SUPER_ADMIN_EMAIL = "johanmunoz342@gmail.com";
+
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
@@ -135,6 +138,11 @@ public class UserService {
 
     @Transactional
     public UserResponse update(Long id, UserUpdateRequest request) {
+        return update(id, request, null);
+    }
+
+    @Transactional
+    public UserResponse update(Long id, UserUpdateRequest request, Long actorId) {
         User user = findOrFail(id);
         String email = normalizeEmail(request.email());
 
@@ -145,6 +153,25 @@ public class UserService {
         Role role = requireActiveRole(request.roleId());
         boolean wouldDeactivate = !Boolean.TRUE.equals(request.active());
         boolean wouldChangeRole = !user.getRole().getId().equals(role.getId());
+
+        if (isSuperAdmin(user)) {
+            if (actorId != null && !user.getId().equals(actorId)) {
+                throw BusinessException.conflict(
+                        "Otros administradores no pueden modificar la cuenta ni el rol del Super Admin propietario del sistema");
+            }
+            if (wouldChangeRole || !Role.ADMIN.equals(role.getName())) {
+                throw BusinessException.conflict(
+                        "No se puede cambiar el rol del propietario del sistema (Super Admin)");
+            }
+            if (wouldDeactivate) {
+                throw BusinessException.conflict(
+                        "No se puede desactivar la cuenta del propietario del sistema (Super Admin)");
+            }
+            if (!SUPER_ADMIN_EMAIL.equalsIgnoreCase(email)) {
+                throw BusinessException.conflict(
+                        "No se puede cambiar el correo del propietario del sistema (Super Admin)");
+            }
+        }
 
         if (isLastActiveAdmin(user) && (wouldDeactivate || wouldChangeRole)) {
             throw BusinessException.conflict(
@@ -166,6 +193,9 @@ public class UserService {
     public UserResponse changeStatus(Long id, boolean active, Long actorId) {
         User user = findOrFail(id);
 
+        if (!active && isSuperAdmin(user)) {
+            throw BusinessException.conflict("No se puede desactivar la cuenta del propietario del sistema (Super Admin)");
+        }
         if (!active && id.equals(actorId)) {
             throw BusinessException.conflict("No puede desactivar su propio usuario");
         }
@@ -175,6 +205,10 @@ public class UserService {
 
         user.setActive(active);
         return UserResponse.from(userRepository.save(user));
+    }
+
+    public static boolean isSuperAdmin(User user) {
+        return user != null && SUPER_ADMIN_EMAIL.equalsIgnoreCase(user.getEmail());
     }
 
     private User findOrFail(Long id) {

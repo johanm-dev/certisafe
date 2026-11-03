@@ -25,6 +25,13 @@ export const ROLE_ADMIN_ID = 1;
 export const ROLE_INSTRUCTOR_ID = 2;
 export const ROLE_OPERATOR_ID = 3;
 
+/** Correo del propietario del sistema (Super Admin), protegido contra cambio de rol o baja. */
+export const SUPER_ADMIN_EMAIL = 'johanmunoz342@gmail.com';
+
+export function esCorreoSuperAdmin(email?: string | null): boolean {
+  return (email ?? '').trim().toLowerCase() === SUPER_ADMIN_EMAIL;
+}
+
 /**
  * Política de contraseña del backend (RNF de seguridad): mínimo 8 caracteres, al menos una
  * mayúscula, una minúscula, un dígito y un carácter especial. Se replica aquí para avisar en

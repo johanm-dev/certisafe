@@ -10,7 +10,7 @@
     <span class="cs-user">
       <mat-icon>account_circle</mat-icon>
       <span class="cs-user-name">{{ usuario.fullName }}</span>
-      <span class="cs-role">{{ usuario.role }}</span>
+      <span class="cs-role">{{ esSuperAdmin() ? 'SUPER ADMIN' : usuario.role }}</span>
     </span>
   }
 

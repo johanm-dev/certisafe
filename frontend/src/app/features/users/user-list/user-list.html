@@ -105,9 +105,18 @@
         <ng-container matColumnDef="role">
           <th mat-header-cell *matHeaderCellDef>Rol</th>
           <td mat-cell *matCellDef="let usuario">
-            <span class="cs-chip" [class]="'cs-chip cs-chip--' + tonoRol(usuario.role.name)">
-              {{ usuario.role.name }}
-            </span>
+            @if (esSuperAdmin(usuario)) {
+              <span
+                class="cs-chip cs-chip--super"
+                matTooltip="Propietario del sistema (Super Admin)"
+              >
+                SUPER ADMIN
+              </span>
+            } @else {
+              <span class="cs-chip" [class]="'cs-chip cs-chip--' + tonoRol(usuario.role.name)">
+                {{ usuario.role.name }}
+              </span>
+            }
           </td>
         </ng-container>
 
@@ -154,30 +163,42 @@
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef class="cs-acciones-col"></th>
           <td mat-cell *matCellDef="let usuario" class="cs-acciones-col">
-            <button
-              matIconButton
-              type="button"
-              [matMenuTriggerFor]="acciones"
-              [attr.aria-label]="'Acciones para ' + usuario.fullName"
-            >
-              <mat-icon>more_vert</mat-icon>
-            </button>
+            @if (esSuperAdmin(usuario) && !esUsuarioActual(usuario)) {
+              <button
+                matIconButton
+                type="button"
+                disabled
+                matTooltip="Cuenta de Super Admin protegida (otros administradores no pueden cambiar su rol ni estado)"
+                aria-label="Cuenta de Super Admin protegida"
+              >
+                <mat-icon>lock</mat-icon>
+              </button>
+            } @else {
+              <button
+                matIconButton
+                type="button"
+                [matMenuTriggerFor]="acciones"
+                [attr.aria-label]="'Acciones para ' + usuario.fullName"
+              >
+                <mat-icon>more_vert</mat-icon>
+              </button>
 
-            <mat-menu #acciones="matMenu">
-              @if (puedeEditar()) {
-                <button mat-menu-item type="button" (click)="editarUsuario(usuario)">
-                  <mat-icon>edit</mat-icon>
-                  <span>Editar</span>
-                </button>
-              }
+              <mat-menu #acciones="matMenu">
+                @if (puedeEditar()) {
+                  <button mat-menu-item type="button" (click)="editarUsuario(usuario)">
+                    <mat-icon>edit</mat-icon>
+                    <span>Editar</span>
+                  </button>
+                }
 
-              @if (puedeActivarDesactivar() && !esUsuarioActual(usuario)) {
-                <button mat-menu-item type="button" (click)="cambiarEstado(usuario)">
-                  <mat-icon>{{ usuario.active ? 'person_off' : 'how_to_reg' }}</mat-icon>
-                  <span>{{ usuario.active ? 'Desactivar' : 'Activar' }}</span>
-                </button>
-              }
-            </mat-menu>
+                @if (puedeActivarDesactivar() && !esUsuarioActual(usuario) && !esSuperAdmin(usuario)) {
+                  <button mat-menu-item type="button" (click)="cambiarEstado(usuario)">
+                    <mat-icon>{{ usuario.active ? 'person_off' : 'how_to_reg' }}</mat-icon>
+                    <span>{{ usuario.active ? 'Desactivar' : 'Activar' }}</span>
+                  </button>
+                }
+              </mat-menu>
+            }
           </td>
         </ng-container>
 

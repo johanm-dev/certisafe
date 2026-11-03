@@ -72,8 +72,10 @@ public class UserController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('users.update')")
     @Operation(summary = "Actualizar usuario", description = "No modifica la contraseña.")
-    public UserResponse update(@PathVariable Long id, @Valid @RequestBody UserUpdateRequest request) {
-        return userService.update(id, request);
+    public UserResponse update(@PathVariable Long id,
+                               @Valid @RequestBody UserUpdateRequest request,
+                               @AuthenticationPrincipal UserPrincipal actor) {
+        return userService.update(id, request, actor == null ? null : actor.getId());
     }
 
     @PatchMapping("/{id}/status")
